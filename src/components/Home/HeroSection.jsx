@@ -2,8 +2,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Button from '../common/Button';
+import { useNavigate } from 'react-router-dom';
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="min-h-screen flex items-center justify-center bg-blue-100">
       <motion.div
@@ -16,7 +19,7 @@ const HeroSection = () => {
         <p className="text-xl text-gray-600 mb-6">
           A passionate Full-Stack Developer specializing in building exceptional digital experiences.
         </p>
-        <Button variant="primary" onClick={() => window.location.href = '/projects'}>
+        <Button variant="primary" onClick={() => navigate('/projects')}>
           View My Projects
         </Button>
       </motion.div>

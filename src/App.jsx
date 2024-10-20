@@ -8,6 +8,7 @@ import ProjectsPage from './pages/ProjectsPage';
 import SkillsPage from './pages/SkillsPage';
 import ContactPage from './pages/ContactPage';
 import BlogPage from './pages/BlogPage';
+import BlogPost from './components/Blog/BlogPost';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
             <Route path="/skills" element={<SkillsPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/blog" element={<BlogPage />} />
+            <Route path="/blog/:slug" element={<BlogPost />} /> {/* Dynamic Blog Post Route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
