@@ -9,46 +9,46 @@ import bugLogo from '../../assets/images/bug.png';
 import appsecLogo from '../../assets/images/appsec.png';
 
 const volunteerExperiences = [
-{
+  {
     title: 'Fellowship Assessor',
     company: 'British Computer Society',
     logo: bcsLogo,
     date: '2023 - Present',
     details: [
-        'nominated as an FBCS assessor, in which capacity, I assess the applications for aspiring members of the BCS under the Fellowship category and admit them upon a successful assessment'
+      'Nominated as an FBCS assessor, in which capacity, I assess the applications for aspiring members of the BCS under the Fellowship category and admit them upon a successful assessment.'
     ],
-},
-{
-    title: 'Advisory Counctil Member',
+  },
+  {
+    title: 'Advisory Council Member',
     company: 'Harvard Business Review',
     logo: hbrLogo,
     date: '2024 - Present',
     details: [
-        'Helped in research and ongoing activities at HBR as an advisory council member'
+      'Helped in research and ongoing activities at HBR as an advisory council member.'
     ],
-},
-{
+  },
+  {
     title: 'Report Assessor',
     company: 'Bugcrowd',
     logo: bugLogo,
     date: '2022 - Present',
     details: [
-        'Review reports and submissions from researchers across the globe and authorize awards based on the merit of the submissions'
+      'Review reports and submissions from researchers across the globe and authorize awards based on the merit of the submissions.'
     ],
-},
-{
+  },
+  {
     title: 'Guest Speaker',
     company: 'OWASP AppSec Day',
     logo: appsecLogo,
     date: '2020 - Present',
     details: [
-        'I was an invited speaker at OWASP AppSec conferences across the Globe and I have talked and trained the participants on topics - ',
-        'Best practices in using wide operations platforms including - Kubernetes/serverless stack, etc.',
-        'Securing the DevOps Code pipeline',
-        'Best security practices and leveraging cloud-native solutions in economically and securely deploying applications',
-        'Enhancing API performance and security',
+      'I was an invited speaker at OWASP AppSec conferences across the globe and I have talked and trained the participants on topics:',
+      'Best practices in using wide operations platforms including Kubernetes/serverless stack, etc.',
+      'Securing the DevOps Code pipeline.',
+      'Best security practices and leveraging cloud-native solutions in deploying applications.',
+      'Enhancing API performance and security.',
     ],
-},
+  },
   {
     title: 'Core Committee Member',
     company: 'null Security',
@@ -88,14 +88,14 @@ const VolunteerExperience = () => {
   }, [timelineInView, controls]);
 
   return (
-    <section className="min-h-screen bg-gray-100 py-20">
-      <div className="container mx-auto">
-        <h1 className="text-5xl font-bold text-center mb-16 text-gray-900">Volunteer Experience</h1>
+    <section className="min-h-screen bg-gray-100 py-20 relative">
+      <div className="container mx-auto px-4">
+        <h1 className="text-4xl sm:text-5xl font-bold text-center mb-12 text-gray-900">Volunteer Experience</h1>
         <div className="relative">
           {/* Vertical Line */}
           <motion.div
             ref={timelineRef}
-            className="absolute w-1 bg-blue-600 h-full left-1/2 transform -translate-x-1/2"
+            className="absolute w-1 bg-blue-600 h-full left-1/2 transform -translate-x-1/2 hidden sm:block"
             initial={{ height: '0%' }}
             animate={controls}
             transition={{ duration: 1.5 }}
@@ -104,40 +104,40 @@ const VolunteerExperience = () => {
           {volunteerExperiences.map((experience, index) => (
             <motion.div
               key={index}
-              className={`flex items-center justify-between mb-10 w-full ${
-                index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'
+              className={`flex flex-col sm:flex-row items-center justify-between mb-10 w-full ${
+                index % 2 === 0 ? 'sm:flex-row' : 'sm:flex-row-reverse'
               }`}
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.2 }}
+              transition={{ duration: 0.6, delay: index * 0.2 }}
               onHoverStart={() => setCurrentStep(index + 1)}
             >
               {/* Experience Card */}
               <motion.div
-                className="bg-white rounded-lg shadow-lg p-8 w-1/3 transform transition-transform hover:-translate-y-2 hover:shadow-xl hover:scale-105 duration-300"
+                className="bg-white rounded-lg shadow-lg p-6 sm:w-1/3 w-full mb-4 sm:mb-0 transform transition-transform hover:-translate-y-2 hover:shadow-xl hover:scale-105 duration-300"
               >
                 <div className="flex items-center mb-4">
                   {/* Company Logo */}
                   <img src={experience.logo} alt={`${experience.company} logo`} className="w-12 h-12 mr-4" />
                   <div>
-                    <h2 className="text-3xl font-semibold text-gray-800 mb-1">{experience.title}</h2>
-                    <h3 className="text-xl font-medium text-blue-600">{experience.company}</h3>
+                    <h2 className="text-xl sm:text-3xl font-semibold text-gray-800 mb-1">{experience.title}</h2>
+                    <h3 className="text-lg sm:text-xl font-medium text-blue-600">{experience.company}</h3>
                     <p className="text-sm text-gray-500">{experience.date}</p>
                   </div>
                 </div>
-                <ul className="text-gray-700 space-y-2">
+                <ul className="text-gray-700 space-y-2 text-sm sm:text-base">
                   {experience.details.map((detail, i) => (
-                    <li key={i} className="text-base leading-6">• {detail}</li>
+                    <li key={i}>• {detail}</li>
                   ))}
                 </ul>
               </motion.div>
 
               {/* Step Marker */}
               <motion.div
-                className={`w-10 h-10 rounded-full ${
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${
                   currentStep === index + 1 ? 'bg-yellow-500' : 'bg-blue-600'
-                } border-4 border-white flex items-center justify-center text-white font-bold text-lg transition-colors duration-300`}
+                } border-4 border-white flex items-center justify-center text-white font-bold text-sm sm:text-lg transition-colors duration-300`}
               >
                 {index + 1}
               </motion.div>

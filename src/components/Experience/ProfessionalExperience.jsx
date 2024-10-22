@@ -89,7 +89,6 @@ const ProfessionalExperience = () => {
     }
   }, [timelineInView, controls]);
 
-  // Calculate scroll progress for the progress bar
   const handleScroll = () => {
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
     const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -110,13 +109,13 @@ const ProfessionalExperience = () => {
         style={{ height: `${scrollProgress}%` }}
       ></div>
 
-      <div className="container mx-auto">
-        <h1 className="text-5xl font-bold text-center mb-16 text-gray-900">Professional Experience</h1>
+      <div className="container mx-auto px-4">
+        <h1 className="text-4xl sm:text-5xl font-bold text-center mb-12 text-gray-900">Professional Experience</h1>
         <div className="relative">
           {/* Vertical Line */}
           <motion.div
             ref={timelineRef}
-            className="absolute w-1 bg-blue-600 h-full left-1/2 transform -translate-x-1/2"
+            className="absolute w-1 bg-blue-600 h-full left-1/2 transform -translate-x-1/2 hidden sm:block"
             initial={{ height: '0%' }}
             animate={controls}
             transition={{ duration: 1.5 }}
@@ -125,8 +124,8 @@ const ProfessionalExperience = () => {
           {experiences.map((experience, index) => (
             <motion.div
               key={index}
-              className={`flex items-center justify-between mb-10 w-full ${
-                index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'
+              className={`flex flex-col sm:flex-row items-center justify-between mb-10 w-full ${
+                index % 2 === 0 ? 'sm:flex-row' : 'sm:flex-row-reverse'
               }`}
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -136,29 +135,29 @@ const ProfessionalExperience = () => {
             >
               {/* Experience Card */}
               <motion.div
-                className="bg-white rounded-lg shadow-lg p-8 w-1/3 transform transition-transform hover:-translate-y-2 hover:shadow-xl hover:scale-105 duration-300"
+                className="bg-white rounded-lg shadow-lg p-6 sm:w-1/3 w-full mb-4 sm:mb-0 transform transition-transform hover:-translate-y-2 hover:shadow-xl hover:scale-105 duration-300"
               >
                 <div className="flex items-center mb-4">
                   {/* Company Logo */}
                   <img src={experience.logo} alt={`${experience.company} logo`} className="w-12 h-12 mr-4" />
                   <div>
-                    <h2 className="text-3xl font-semibold text-gray-800 mb-1">{experience.title}</h2>
-                    <h3 className="text-xl font-medium text-blue-600">{experience.company}</h3>
+                    <h2 className="text-xl sm:text-3xl font-semibold text-gray-800 mb-1">{experience.title}</h2>
+                    <h3 className="text-lg sm:text-xl font-medium text-blue-600">{experience.company}</h3>
                     <p className="text-sm text-gray-500">{experience.date}</p>
                   </div>
                 </div>
-                <ul className="text-gray-700 space-y-2">
+                <ul className="text-gray-700 space-y-2 text-sm sm:text-base">
                   {experience.details.map((detail, i) => (
-                    <li key={i} className="text-base leading-6">• {detail}</li>
+                    <li key={i}>• {detail}</li>
                   ))}
                 </ul>
               </motion.div>
 
               {/* Step Marker */}
               <motion.div
-                className={`w-10 h-10 rounded-full ${
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${
                   currentStep === index + 1 ? 'bg-yellow-500' : 'bg-blue-600'
-                } border-4 border-white flex items-center justify-center text-white font-bold text-lg transition-colors duration-300`}
+                } border-4 border-white flex items-center justify-center text-white font-bold text-sm sm:text-lg transition-colors duration-300`}
               >
                 {index + 1}
               </motion.div>
