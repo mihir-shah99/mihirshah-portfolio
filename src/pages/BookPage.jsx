@@ -81,17 +81,17 @@ const BookPage = () => {
     {
       title: 'Threat Modeling',
       description: 'Learn how to identify, analyze, and mitigate threats in cloud-native environments.',
-      icon: '../src/assets/images/threat.png', 
+      icon: '../src/assets/images/threat.jpg', 
     },
     {
       title: 'Secure Architecture',
       description: 'Understand the fundamentals of building secure, scalable cloud architectures.',
-      icon: '../src/assets/images/architecture.png',
+      icon: '../src/assets/images/architecture.jpg',
     },
     {
       title: 'Compliance Best Practices',
       description: 'Explore regulatory compliance strategies for cloud-native environments.',
-      icon: '../src/assets/images/compliance.png',
+      icon: '../src/assets/images/compliance.jpg',
     }
   ];
 
