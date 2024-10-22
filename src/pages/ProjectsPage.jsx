@@ -5,11 +5,58 @@ import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import ProjectCard from './ProjectCard';
 
-// Fetch data from the Cloudflare Worker (both profile stats and repositories)
-const fetchGitHubData = async (page = 1, perPage = 10) => {
-  const response = await fetch(`/getRepos?page=${page}&per_page=${perPage}`);
-  const data = await response.json();
-  return data;
+// GitHub access token (hardcoded)
+const GITHUB_TOKEN = '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';
+
+// Helper function to fetch repositories and their languages from GitHub API
+const fetchReposAndLanguages = async (page = 1, perPage = 10) => {
+  const headers = {
+    Authorization: `token ${GITHUB_TOKEN}`,
+    Accept: 'application/vnd.github.v3+json',
+  };
+
+  const repoResponse = await fetch(
+    `https://api.github.com/users/mihir-shah99/repos?page=${page}&per_page=${perPage}`,
+    { headers }
+  );
+  const repos = await repoResponse.json();
+
+  // For each repo, fetch the languages used
+  const reposWithLanguages = await Promise.all(
+    repos.map(async (repo) => {
+      const languagesResponse = await fetch(repo.languages_url, { headers });
+      const languages = await languagesResponse.json();
+      return { ...repo, languages };
+    })
+  );
+
+  return reposWithLanguages;
+};
+
+// Helper function to fetch GitHub profile stats
+const fetchProfileStats = async () => {
+  const headers = {
+    Authorization: `token ${GITHUB_TOKEN}`,
+    Accept: 'application/vnd.github.v3+json',
+  };
+
+  const profileResponse = await fetch('https://api.github.com/users/mihir-shah99', {
+    headers,
+  });
+  const profile = await profileResponse.json();
+
+  // Fetch all repos to calculate total stars
+  const reposResponse = await fetch('https://api.github.com/users/mihir-shah99/repos', {
+    headers,
+  });
+  const repos = await reposResponse.json();
+  const totalStars = repos.reduce((acc, repo) => acc + repo.stargazers_count, 0);
+
+  return {
+    followers: profile.followers,
+    publicRepos: profile.public_repos,
+    totalStars,
+  };
 };
 
 // Define featured project names manually
@@ -27,10 +74,7 @@ const ProjectsPage = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = await fetchGitHubData(page, 10);
-      setProfileStats(data.profileStats);
-
-      const repositories = data.repositories;
+      const repositories = await fetchReposAndLanguages(page, 10);
       setRepos((prevRepos) => [...prevRepos, ...repositories]);
 
       // Extract unique languages from all repositories
@@ -46,6 +90,12 @@ const ProjectsPage = () => {
       setLoading(false);
     };
 
+    const fetchProfileStatsAndSet = async () => {
+      const stats = await fetchProfileStats();
+      setProfileStats(stats);
+    };
+
+    fetchProfileStatsAndSet();
     fetchData();
   }, [page]);
 
