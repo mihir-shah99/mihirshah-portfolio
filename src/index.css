@@ -3,12 +3,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles can go below */
 body {
   @apply bg-gray-50;
 }
-
-/* src/index.css */
 #about {
   background: linear-gradient(to right, #f7fafc, #edf2f7);  /* Subtle gradient */
 }
@@ -29,7 +26,6 @@ body {
 .my-masonry-grid_column > div {
   margin-bottom: 30px;
 }
-/* Add this to your main CSS file */
 
 .container {
   max-width: 1200px;
@@ -59,4 +55,12 @@ body {
 
 .shadow-lg:hover {
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.hover:shadow-xl {
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+html {
+  scroll-behavior: smooth;
 }
