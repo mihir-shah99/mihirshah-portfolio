@@ -1,4 +1,3 @@
-// src/components/Contact/ContactForm.jsx
 import React, { useState } from 'react';
 import Button from '../common/Button';
 
@@ -43,8 +42,8 @@ const ContactForm = () => {
   };
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow-md">
-      <h3 className="text-2xl font-semibold text-gray-800 mb-4">Send Me a Message</h3>
+    <div className="bg-white p-6 sm:p-8 rounded-lg shadow-md max-w-lg mx-auto">
+      <h3 className="text-2xl font-semibold text-gray-800 mb-4 text-center">Send Me a Message</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="name" className="block text-gray-700">Name</label>
@@ -82,10 +81,15 @@ const ContactForm = () => {
             required
           ></textarea>
         </div>
-        <Button type="submit" variant="primary">
-          {status ? status : 'Send Message'}
-        </Button>
+        <div className="text-center">
+          <Button type="submit" variant="primary" className="w-full sm:w-auto">
+            {status ? status : 'Send Message'}
+          </Button>
+        </div>
       </form>
+      {status && (
+        <p className="mt-4 text-center text-sm text-gray-600">{status}</p>
+      )}
     </div>
   );
 };

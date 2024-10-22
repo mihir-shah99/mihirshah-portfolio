@@ -20,23 +20,23 @@ const HeroSection = () => {
         <img
           src={profileImage}
           alt="Mihir Shah"
-          className="w-32 h-32 rounded-full mx-auto mb-6"
+          className="w-24 h-24 sm:w-32 sm:h-32 rounded-full mx-auto mb-4 sm:mb-6"
         />
-        <h1 className="text-5xl font-bold mb-6">Mihir Shah</h1>
-        <p className="text-lg mb-6">
+        <h1 className="text-3xl sm:text-5xl font-bold mb-4 sm:mb-6">Mihir Shah</h1>
+        <p className="text-base sm:text-lg mb-4 sm:mb-6">
           Cybersecurity Expert | Cloud Security Pioneer | Author of the <em>Cloud Native Software Security Handbook</em>
         </p>
-        <div className="space-x-4">
+        <div className="space-x-0 sm:space-x-4 flex flex-col sm:flex-row items-center justify-center">
           <motion.a
             href="#projects"
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded mb-3 sm:mb-0"
             whileHover={{ scale: 1.05 }}
           >
             View My Work
           </motion.a>
           <motion.a
             href="/book"
-            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded"
             whileHover={{ scale: 1.05 }}
           >
             Learn About My Book

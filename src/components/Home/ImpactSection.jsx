@@ -42,29 +42,29 @@ const ImpactSection = () => {
 
   return (
     <motion.section
-      className="py-20 bg-blue-900 text-white text-center"
+      className="py-16 bg-blue-900 text-white text-center"
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
     >
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold mb-6">My Professional Impact</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold mb-8">My Professional Impact</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-6xl font-bold">{count1}+</h3>
-            <p className="text-lg">Industry Leaders' Testimonials</p>
+            <h3 className="text-4xl sm:text-6xl font-bold">{count1}+</h3>
+            <p className="text-md sm:text-lg">Industry Leaders' Testimonials</p>
           </div>
           <div>
-            <h3 className="text-6xl font-bold">${count2.toLocaleString()}</h3>
-            <p className="text-lg">Saved for ForgeRock</p>
+            <h3 className="text-4xl sm:text-6xl font-bold">${count2.toLocaleString()}</h3>
+            <p className="text-md sm:text-lg">Saved for ForgeRock</p>
           </div>
           <div>
-            <h3 className="text-6xl font-bold">{count3}+</h3>
-            <p className="text-lg">Projects Secured Globally</p>
+            <h3 className="text-4xl sm:text-6xl font-bold">{count3}+</h3>
+            <p className="text-md sm:text-lg">Projects Secured Globally</p>
           </div>
           <div>
-            <h3 className="text-6xl font-bold">{count4}+</h3>
-            <p className="text-lg">Talks & Workshops Delivered</p>
+            <h3 className="text-4xl sm:text-6xl font-bold">{count4}+</h3>
+            <p className="text-md sm:text-lg">Talks & Workshops Delivered</p>
           </div>
         </div>
       </div>

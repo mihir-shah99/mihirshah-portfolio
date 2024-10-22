@@ -45,27 +45,30 @@ const timelineData = [
 const SkillsTimeline = () => {
   return (
     <div className="container mx-auto px-4 py-12">
-      <h2 className="text-4xl font-bold text-center mb-8">Skills Development Timeline</h2>
+      <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8">Skills Development Timeline</h2>
       <div className="relative">
-        <div className="border-l-2 border-blue-500 absolute h-full top-0 left-1/2 transform -translate-x-1/2"></div>
+        <div className="border-l-2 border-blue-500 absolute h-full top-0 left-1/2 transform -translate-x-1/2 hidden sm:block"></div>
         <div className="space-y-12">
           {timelineData.map((event, index) => (
             <motion.div
               key={index}
-              className={`flex items-center justify-between ${index % 2 === 0 ? 'flex-row-reverse' : ''}`}
+              className={`flex flex-col sm:flex-row items-center justify-between ${index % 2 === 0 ? 'sm:flex-row-reverse' : ''}`}
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <div className="w-1/2 p-6 text-center bg-white shadow-lg rounded-lg">
-                <h3 className="text-xl font-semibold mb-2">{event.title}</h3>
+              {/* Timeline Card */}
+              <div className="w-full sm:w-1/2 p-6 text-center bg-white shadow-lg rounded-lg mb-6 sm:mb-0">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2">{event.title}</h3>
                 <p className="text-gray-600">{event.description}</p>
-                <div className="text-blue-500 text-4xl mt-4">{event.icon}</div>
+                <div className="text-blue-500 text-3xl sm:text-4xl mt-4">{event.icon}</div>
               </div>
-              <div className="w-1/6 text-center">
-                <div className="bg-blue-500 text-white p-4 rounded-full">
-                  <p className="font-bold">{event.year}</p>
+
+              {/* Year Marker */}
+              <div className="w-full sm:w-1/6 text-center mb-4 sm:mb-0">
+                <div className="bg-blue-500 text-white p-4 rounded-full w-16 h-16 mx-auto flex items-center justify-center">
+                  <p className="font-bold text-lg">{event.year}</p>
                 </div>
               </div>
             </motion.div>

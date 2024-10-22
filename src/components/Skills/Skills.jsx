@@ -48,7 +48,7 @@ const Skills = () => {
       <div className="container mx-auto px-4">
         {/* Animated Section Header */}
         <motion.h2
-          className="text-5xl font-bold text-center mb-8 text-blue-600"
+          className="text-4xl sm:text-5xl font-bold text-center mb-8 text-blue-600"
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
@@ -57,11 +57,11 @@ const Skills = () => {
         </motion.h2>
 
         {/* Skill Category Tabs */}
-        <div className="flex justify-center space-x-4 mb-8">
+        <div className="flex flex-wrap justify-center space-x-2 sm:space-x-4 mb-8">
           {Object.keys(skillsData).map((category) => (
             <button
               key={category}
-              className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-semibold transition-colors ${
                 selectedCategory === category ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
               } hover:bg-blue-500 hover:text-white`}
               onClick={() => handleScrollToSection(category)}
@@ -74,8 +74,8 @@ const Skills = () => {
         {/* Display Skills by Category */}
         {Object.keys(skillsData).map((category) => (
           <div id={category} key={category} className="mb-12">
-            <h3 className="text-3xl font-semibold text-center mb-6 text-blue-500">{category}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <h3 className="text-2xl sm:text-3xl font-semibold text-center mb-6 text-blue-500">{category}</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
               {skillsData[category].map((skill, index) => (
                 <motion.div
                   key={index}
@@ -85,10 +85,10 @@ const Skills = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.2, duration: 0.5 }}
                 >
-                  <div className="flex items-center justify-center mb-4 text-6xl text-blue-500">
+                  <div className="flex items-center justify-center mb-4 text-5xl sm:text-6xl text-blue-500">
                     {skill.icon}
                   </div>
-                  <h3 className="text-xl font-semibold text-center mb-4">{skill.name}</h3>
+                  <h3 className="text-lg sm:text-xl font-semibold text-center mb-4">{skill.name}</h3>
                   
                   {/* Proficiency Bar */}
                   <div className="relative group w-full bg-gray-200 rounded-full h-4 mb-4">
@@ -104,7 +104,7 @@ const Skills = () => {
                       {skill.proficiency}%
                     </span>
                   </div>
-                  <p className="text-center text-gray-600">Proficiency: {skill.proficiency}%</p>
+                  <p className="text-center text-gray-600 text-sm sm:text-base">Proficiency: {skill.proficiency}%</p>
                 </motion.div>
               ))}
             </div>
