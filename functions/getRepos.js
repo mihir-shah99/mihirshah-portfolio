@@ -1,88 +1,90 @@
-export async function onRequest(context) {
-    const GITHUB_TOKEN = context.env.GITHUB_TOKEN;
-    const GITHUB_API_URL = 'https://api.github.com';
-    const headers = {
-      Authorization: `token ${GITHUB_TOKEN}`,
-      'User-Agent': 'CloudflareWorker',
-    };
+export default {
+    async fetch(request, env) {
+      const url = new URL(request.url);
   
-    const cache = caches.default;  // Cloudflare default cache
-  
-    // Cache key based on the URL
-    const cacheKey = new Request(context.request.url, context.request);
-  
-    // Check if the response is already in the cache
-    let cachedResponse = await cache.match(cacheKey);
-    if (cachedResponse) {
-      return cachedResponse;  // Return cached response if available
+      // Check the route path
+      if (url.pathname.startsWith("/getRepos")) {
+        // Call the handler for fetching repos
+        return handleGetRepos(request, env);
+      } else if (url.pathname.startsWith("/getProfileStats")) {
+        // Call the handler for fetching profile stats
+        return handleGetProfileStats(request, env);
+      } else {
+        return new Response("Not Found", { status: 404 });
+      }
     }
+  };
   
-    // Fetch the rate limit information
-    try {
-      const rateLimitResponse = await fetch(`${GITHUB_API_URL}/rate_limit`, {
-        headers,
-      });
+  // Handler function for /getRepos
+  async function handleGetRepos(request, env) {
+    const GITHUB_TOKEN = env.GITHUB_TOKEN;
   
-      if (!rateLimitResponse.ok) {
-        return new Response(
-          JSON.stringify({
-            error: `GitHub API rate limit error: ${rateLimitResponse.status} - ${rateLimitResponse.statusText}`,
-          }),
-          { status: rateLimitResponse.status }
-        );
-      }
+    const url = new URL(request.url);
+    const page = url.searchParams.get("page") || 1;
+    const perPage = url.searchParams.get("per_page") || 10;
   
-      const rateLimitData = await rateLimitResponse.json();
-      const remainingRequests = rateLimitData.rate.remaining;
-      const resetTime = new Date(rateLimitData.rate.reset * 1000).toLocaleString();
+    const response = await fetch(`https://api.github.com/user/repos?page=${page}&per_page=${perPage}`, {
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    });
   
-      // Check if rate limit is exceeded
-      if (remainingRequests === 0) {
-        return new Response(
-          JSON.stringify({
-            error: `GitHub API rate limit exceeded. Limit will reset at ${resetTime}`,
-          }),
-          { status: 429 } // Too Many Requests
-        );
-      }
-  
-      // Proceed to fetch repositories
-      const reposResponse = await fetch(
-        `${GITHUB_API_URL}/users/mihir-shah99/repos`,
-        {
-          headers,
-        }
-      );
-  
-      if (!reposResponse.ok) {
-        return new Response(
-          JSON.stringify({
-            error: `GitHub API error: ${reposResponse.status} - ${reposResponse.statusText}`,
-          }),
-          { status: reposResponse.status }
-        );
-      }
-  
-      const repos = await reposResponse.json();
-  
-      // Cache the response
-      const response = new Response(JSON.stringify(repos), {
+    if (!response.ok) {
+      const message = await response.text();
+      return new Response(JSON.stringify({ error: `GitHub API error: ${response.status} - ${message}` }), {
         headers: { 'Content-Type': 'application/json' },
       });
-  
-      // Cache the response for 5 minutes (300 seconds)
-      response.headers.append('Cache-Control', 's-maxage=86400');
-  
-      // Store the response in Cloudflare's cache
-      await cache.put(cacheKey, response.clone());
-  
-      return response;
-  
-    } catch (error) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch repos' }),
-        { status: 500 }
-      );
     }
+  
+    const repos = await response.json();
+    return new Response(JSON.stringify(repos), { headers: { 'Content-Type': 'application/json' } });
+  }
+  
+  // Handler function for /getProfileStats
+  async function handleGetProfileStats(request, env) {
+    const GITHUB_TOKEN = env.GITHUB_TOKEN;
+  
+    const profileResponse = await fetch('https://api.github.com/user', {
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    });
+  
+    if (!profileResponse.ok) {
+      const message = await profileResponse.text();
+      return new Response(JSON.stringify({ error: `GitHub API error: ${profileResponse.status} - ${message}` }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+  
+    const profile = await profileResponse.json();
+  
+    // Fetch all repositories to calculate total stars
+    const reposResponse = await fetch('https://api.github.com/user/repos', {
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    });
+  
+    if (!reposResponse.ok) {
+      const message = await reposResponse.text();
+      return new Response(JSON.stringify({ error: `GitHub API error: ${reposResponse.status} - ${message}` }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+  
+    const repos = await reposResponse.json();
+    const totalStars = repos.reduce((acc, repo) => acc + repo.stargazers_count, 0);
+  
+    const stats = {
+      followers: profile.followers,
+      publicRepos: profile.public_repos,
+      totalStars,
+    };
+  
+    return new Response(JSON.stringify(stats), { headers: { 'Content-Type': 'application/json' } });
   }
   
