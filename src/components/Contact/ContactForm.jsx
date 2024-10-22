@@ -21,14 +21,22 @@ const ContactForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus('Sending...');
-
-    // Placeholder for form submission logic
-    // You can integrate with Formspree, Netlify Forms, or your own backend
+  
     try {
-      // Simulate form submission delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setStatus('Message sent successfully!');
-      setFormData({ name: '', email: '', message: '' });
+      const response = await fetch('https://formspree.io/f/xvgograa', { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+  
+      if (response.ok) {
+        setStatus('Message sent successfully!');
+        setFormData({ name: '', email: '', message: '' });
+      } else {
+        setStatus('Failed to send message. Please try again.');
+      }
     } catch (error) {
       setStatus('Failed to send message. Please try again.');
     }

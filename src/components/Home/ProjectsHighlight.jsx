@@ -11,7 +11,7 @@ const projects = [
     title: 'Touch2FA',
     description: 'A flagship 2FA security solution...',
     image: touch2faImage,  // Use the imported image here
-    link: '/touch2fa',
+    link: 'https://touch2fa.com/',
   },
   {
     title: 'Cloud Native Software Security Handbook',
@@ -23,7 +23,7 @@ const projects = [
     title: 'VulnDroid',
     description: 'Security Toolkit for Android...',
     image: vulnDroidImage,  // Use the imported image here
-    link: '/vulndroid',
+    link: 'https://github.com/mihir-shah99/VulnDroid',
   },
   // Add more projects...
 ];

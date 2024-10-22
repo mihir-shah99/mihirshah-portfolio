@@ -17,7 +17,7 @@ const Navbar = () => {
       : 'text-gray-700 hover:text-blue-500';
 
   return (
-    <nav className="bg-white shadow-md fixed w-full z-10">
+    <nav className="bg-white shadow-md fixed w-full z-50">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link to="/" className="text-2xl font-bold text-blue-500">
           Mihir Shah

@@ -16,3 +16,47 @@ body {
 .bg-dark-blue {
   background-color: #0a192f; /* A nice dark navy blue */
 }
+
+.my-masonry-grid {
+  display: flex;
+  margin-left: -30px; /* gutter size offset */
+  width: auto;
+}
+.my-masonry-grid_column {
+  padding-left: 30px; /* gutter size */
+  background-clip: padding-box;
+}
+.my-masonry-grid_column > div {
+  margin-bottom: 30px;
+}
+/* Add this to your main CSS file */
+
+.container {
+  max-width: 1200px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.shadow-lg {
+  transition: all 0.3s ease-in-out;
+}
+
+.shadow-lg:hover {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
