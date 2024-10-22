@@ -20,7 +20,7 @@ const Navbar = () => {
     <nav className="bg-white shadow-md fixed w-full z-10">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link to="/" className="text-2xl font-bold text-blue-500">
-          mihirshah.tech
+          Mihir Shah
         </Link>
         <div className="hidden md:flex space-x-6">
           <NavLink to="/" className={navLinkClass}>
