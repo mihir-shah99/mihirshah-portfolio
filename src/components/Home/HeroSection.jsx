@@ -1,29 +1,49 @@
-// src/components/Home/HeroSection.jsx
 import React from 'react';
-import { motion } from 'framer-motion';
-import Button from '../common/Button';
-import { useNavigate } from 'react-router-dom';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import profileImage from '../../assets/images/profile.jpg';
 
 const HeroSection = () => {
-  const navigate = useNavigate();
+  const { scrollY } = useScroll();
+  const backgroundY = useTransform(scrollY, [0, 300], [0, 100]); // Parallax effect
 
   return (
-    <section className="min-h-screen flex items-center justify-center bg-blue-100">
+    <motion.section
+      className="relative h-screen bg-gradient-to-r from-blue-800 to-gray-900 text-white flex flex-col justify-center items-center"
+      style={{ y: backgroundY }}
+    >
       <motion.div
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
         className="text-center"
       >
-        <h1 className="text-5xl font-bold text-gray-800 mb-4">Hi, I'm Mihir Shah</h1>
-        <p className="text-xl text-gray-600 mb-6">
-          A passionate Full-Stack Developer specializing in building exceptional digital experiences.
+        <img
+          src={profileImage}
+          alt="Mihir Shah"
+          className="w-32 h-32 rounded-full mx-auto mb-6"
+        />
+        <h1 className="text-5xl font-bold mb-6">Mihir Shah</h1>
+        <p className="text-lg mb-6">
+          Cybersecurity Expert | Cloud Security Pioneer | Author of the <em>Cloud Native Software Security Handbook</em>
         </p>
-        <Button variant="primary" onClick={() => navigate('/projects')}>
-          View My Projects
-        </Button>
+        <div className="space-x-4">
+          <motion.a
+            href="#projects"
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            whileHover={{ scale: 1.05 }}
+          >
+            View My Work
+          </motion.a>
+          <motion.a
+            href="#book"
+            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+            whileHover={{ scale: 1.05 }}
+          >
+            Learn About My Book
+          </motion.a>
+        </div>
       </motion.div>
-    </section>
+    </motion.section>
   );
 };
 
