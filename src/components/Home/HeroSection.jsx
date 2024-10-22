@@ -35,7 +35,7 @@ const HeroSection = () => {
             View My Work
           </motion.a>
           <motion.a
-            href="#book"
+            href="/book"
             className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
             whileHover={{ scale: 1.05 }}
           >

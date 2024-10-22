@@ -13,3 +13,6 @@ body {
   background: linear-gradient(to right, #f7fafc, #edf2f7);  /* Subtle gradient */
 }
 
+.bg-dark-blue {
+  background-color: #0a192f; /* A nice dark navy blue */
+}

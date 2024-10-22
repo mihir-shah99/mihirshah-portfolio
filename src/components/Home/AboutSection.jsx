@@ -30,7 +30,7 @@ const AboutSection = () => {
             <p className="text-lg">
               Author of <strong className="text-blue-700">Cloud Native Software Security Handbook</strong>, I share insights that help organizations fortify their systems against modern cyber threats.
             </p>
-            <a href="#book" className="text-blue-500 hover:text-blue-700 mt-4 block">Discover My Book &rarr;</a>
+            <a href="/book" className="text-blue-500 hover:text-blue-700 mt-4 block">Discover My Book &rarr;</a>
           </div>
 
           {/* Block 3: Strategic Impact */}
