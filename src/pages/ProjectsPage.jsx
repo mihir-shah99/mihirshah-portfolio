@@ -6,9 +6,12 @@ import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import ProjectCard from './ProjectCard'; // Separate ProjectCard Component
 
-// Helper function to fetch repositories and their languages from Cloudflare Worker
+// Helper function to fetch repositories from Cloudflare Worker
 const fetchReposAndLanguages = async (page = 1, perPage = 10) => {
   const response = await fetch(`/getRepos?page=${page}&per_page=${perPage}`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch repositories");
+  }
   const repos = await response.json();
 
   // Fetch languages for each repo
@@ -26,6 +29,9 @@ const fetchReposAndLanguages = async (page = 1, perPage = 10) => {
 // Helper function to fetch GitHub profile stats from Cloudflare Worker
 const fetchProfileStats = async () => {
   const response = await fetch(`/getProfileStats`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch profile stats");
+  }
   const stats = await response.json();
   return stats;
 };
@@ -62,25 +68,33 @@ const ProjectsPage = () => {
 
   useEffect(() => {
     const fetchReposAndSet = async () => {
-      const repositories = await fetchReposAndLanguages(page, 10);
-      setRepos((prevRepos) => [...prevRepos, ...repositories]);
+      try {
+        const repositories = await fetchReposAndLanguages(page, 10);
+        setRepos((prevRepos) => [...prevRepos, ...repositories]);
 
-      // Extract unique languages from all repositories
-      const languages = new Set();
-      repositories.forEach((repo) => {
-        Object.keys(repo.languages).forEach((lang) => languages.add(lang));
-      });
-      setAvailableLanguages([...languages]);
+        // Extract unique languages from all repositories
+        const languages = new Set();
+        repositories.forEach((repo) => {
+          Object.keys(repo.languages).forEach((lang) => languages.add(lang));
+        });
+        setAvailableLanguages([...languages]);
 
-      if (repositories.length < 10) {
-        setHasMore(false); // No more repos to load
+        if (repositories.length < 10) {
+          setHasMore(false); // No more repos to load
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching repos:", error);
       }
-      setLoading(false);
     };
 
     const fetchProfileStatsAndSet = async () => {
-      const stats = await fetchProfileStats();
-      setProfileStats(stats);
+      try {
+        const stats = await fetchProfileStats();
+        setProfileStats(stats);
+      } catch (error) {
+        console.error("Error fetching profile stats:", error);
+      }
     };
 
     fetchProfileStatsAndSet();
