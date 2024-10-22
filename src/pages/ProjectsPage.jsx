@@ -1,54 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { formatDistanceToNow } from 'date-fns'; // To format dates
-import Slider from 'react-slick'; // Import the carousel slider
-import { FaStar, FaCodeBranch, FaGithub, FaUsers } from 'react-icons/fa'; // Icons for GitHub stats
+import Slider from 'react-slick';
+import { FaStar, FaCodeBranch, FaGithub, FaUsers } from 'react-icons/fa';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
-import ProjectCard from './ProjectCard'; // Separate ProjectCard Component
+import ProjectCard from './ProjectCard';
 
-// Helper function to fetch both repositories and profile stats from Cloudflare Worker
-const fetchReposAndProfileStats = async (page = 1, perPage = 10) => {
+// Fetch data from the Cloudflare Worker (both profile stats and repositories)
+const fetchGitHubData = async (page = 1, perPage = 10) => {
   const response = await fetch(`/getRepos?page=${page}&per_page=${perPage}`);
   const data = await response.json();
-  return data; // { profileStats, repositories }
-};
-
-// Mapping popular languages to colors
-const languageColors = {
-  JavaScript: '#f1e05a',
-  Python: '#3572A5',
-  Java: '#b07219',
-  HTML: '#e34c26',
-  CSS: '#563d7c',
-  Shell: '#89e051',
-  Dockerfile: '#384d54',
-  Kubernetes: '#326ce5',
-  Vue: "#41b883",
-  Go: "#00ADD8",
-  PHP: "#4F5D95",
-  AIDL: "#34B7F1",
-  TypeScript: "#3178C6"
+  return data;
 };
 
 // Define featured project names manually
-const featuredProjectsNames = ["touch2fa", "VulnDroid", "Learning-Linux"];
+const featuredProjectsNames = ['touch2fa', 'VulnDroid', 'Learning-Linux'];
 
 const ProjectsPage = () => {
   const [repos, setRepos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true); // To track if more repos are available
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('');
   const [availableLanguages, setAvailableLanguages] = useState([]);
   const [profileStats, setProfileStats] = useState({ followers: 0, publicRepos: 0, totalStars: 0 });
 
   useEffect(() => {
-    const fetchReposAndSet = async () => {
-      const { profileStats, repositories } = await fetchReposAndProfileStats(page, 10);
-      
+    const fetchData = async () => {
+      const data = await fetchGitHubData(page, 10);
+      setProfileStats(data.profileStats);
+
+      const repositories = data.repositories;
       setRepos((prevRepos) => [...prevRepos, ...repositories]);
-      setProfileStats(profileStats); // Set the profile stats
 
       // Extract unique languages from all repositories
       const languages = new Set();
@@ -63,7 +46,7 @@ const ProjectsPage = () => {
       setLoading(false);
     };
 
-    fetchReposAndSet();
+    fetchData();
   }, [page]);
 
   // Function to handle search input
@@ -83,14 +66,21 @@ const ProjectsPage = () => {
 
   // Filter repositories based on search and language
   const filteredRepos = repos.filter((repo) => {
-    const matchesSearch = repo.name.toLowerCase().includes(searchQuery) || (repo.description && repo.description.toLowerCase().includes(searchQuery));
-    const matchesLanguage = selectedLanguage === "" || Object.keys(repo.languages).includes(selectedLanguage);
+    const matchesSearch =
+      repo.name.toLowerCase().includes(searchQuery) ||
+      (repo.description && repo.description.toLowerCase().includes(searchQuery));
+    const matchesLanguage =
+      selectedLanguage === '' || Object.keys(repo.languages).includes(selectedLanguage);
     return matchesSearch && matchesLanguage;
   });
 
-  // Separate featured projects
-  const featuredRepos = filteredRepos.filter(repo => featuredProjectsNames.includes(repo.name));
-  const regularRepos = filteredRepos.filter(repo => !featuredProjectsNames.includes(repo.name));
+  // Separate featured projects and regular projects
+  const featuredRepos = filteredRepos.filter((repo) =>
+    featuredProjectsNames.includes(repo.name)
+  );
+  const regularRepos = filteredRepos.filter(
+    (repo) => !featuredProjectsNames.includes(repo.name)
+  );
 
   // Slick carousel settings for mobile
   const sliderSettings = {
@@ -116,15 +106,15 @@ const ProjectsPage = () => {
             </h3>
             <ul className="space-y-2">
               <li className="flex items-center">
-                <FaStar className="text-yellow-400 mr-2" /> 
+                <FaStar className="text-yellow-400 mr-2" />
                 Total Stars: <strong>{profileStats.totalStars}</strong>
               </li>
               <li className="flex items-center">
-                <FaCodeBranch className="text-green-400 mr-2" /> 
+                <FaCodeBranch className="text-green-400 mr-2" />
                 Total Repositories: <strong>{profileStats.publicRepos}</strong>
               </li>
               <li className="flex items-center">
-                <FaUsers className="text-blue-400 mr-2" /> 
+                <FaUsers className="text-blue-400 mr-2" />
                 Followers: <strong>{profileStats.followers}</strong>
               </li>
             </ul>
@@ -136,11 +126,11 @@ const ProjectsPage = () => {
             <div className="w-32 mx-auto">
               <CircularProgressbar
                 value={75} // Replace with actual contribution score
-                text={"B-"}
+                text={'B-'}
                 styles={buildStyles({
-                  textColor: "#fff",
-                  pathColor: "#f06292",
-                  trailColor: "#d6d6d6",
+                  textColor: '#fff',
+                  pathColor: '#f06292',
+                  trailColor: '#d6d6d6',
                 })}
               />
             </div>
@@ -181,7 +171,7 @@ const ProjectsPage = () => {
           {featuredRepos.length > 0 && (
             <div className="mb-12">
               <h2 className="text-3xl font-bold text-center mb-6">Featured Projects</h2>
-              
+
               {/* Carousel for Mobile View */}
               <div className="block md:hidden">
                 <Slider {...sliderSettings}>
@@ -204,7 +194,7 @@ const ProjectsPage = () => {
 
           {/* Regular Projects Section */}
           <h2 className="text-3xl font-bold text-center mb-6">Other Projects</h2>
-          
+
           {/* Carousel for Mobile */}
           <div className="block md:hidden">
             <Slider {...sliderSettings}>
@@ -230,7 +220,7 @@ const ProjectsPage = () => {
                 className="bg-blue-500 text-white p-4 rounded"
                 onClick={loadMoreRepos}
               >
-                {loading ? "Loading more projects..." : "Load More Projects"}
+                {loading ? 'Loading more projects...' : 'Load More Projects'}
               </button>
             </div>
           )}
