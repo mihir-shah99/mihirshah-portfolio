@@ -6,6 +6,17 @@ export async function onRequest(context) {
       'User-Agent': 'CloudflareWorker',
     };
   
+    const cache = caches.default;  // Cloudflare default cache
+  
+    // Cache key based on the URL
+    const cacheKey = new Request(context.request.url, context.request);
+  
+    // Check if the response is already in the cache
+    let cachedResponse = await cache.match(cacheKey);
+    if (cachedResponse) {
+      return cachedResponse;  // Return cached response if available
+    }
+  
     // Fetch the rate limit information
     try {
       const rateLimitResponse = await fetch(`${GITHUB_API_URL}/rate_limit`, {
@@ -54,9 +65,18 @@ export async function onRequest(context) {
   
       const repos = await reposResponse.json();
   
-      return new Response(JSON.stringify(repos), {
+      // Cache the response
+      const response = new Response(JSON.stringify(repos), {
         headers: { 'Content-Type': 'application/json' },
       });
+  
+      // Cache the response for 5 minutes (300 seconds)
+      response.headers.append('Cache-Control', 's-maxage=86400');
+  
+      // Store the response in Cloudflare's cache
+      await cache.put(cacheKey, response.clone());
+  
+      return response;
   
     } catch (error) {
       return new Response(
