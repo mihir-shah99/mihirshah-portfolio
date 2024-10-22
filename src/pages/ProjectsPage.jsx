@@ -13,7 +13,6 @@ const fetchData = async (page = 1, perPage = 10) => {
   return data;
 };
 
-// Mapping popular languages to colors
 const languageColors = {
   JavaScript: '#f1e05a',
   Python: '#3572A5',
@@ -45,21 +44,29 @@ const ProjectsPage = () => {
 
   useEffect(() => {
     const fetchDataAndSet = async () => {
-      const data = await fetchData(page, 10);
-      setRepos((prevRepos) => [...prevRepos, ...data.repos]);
-      setProfileStats(data.profileStats);
+      try {
+        const data = await fetchData(page, 10);
 
-      // Extract unique languages from all repositories
-      const languages = new Set();
-      data.repos.forEach((repo) => {
-        Object.keys(repo.languages).forEach((lang) => languages.add(lang));
-      });
-      setAvailableLanguages([...languages]);
+        if (data.repos.length > 0) {
+          setRepos((prevRepos) => [...prevRepos, ...data.repos]);
+          setProfileStats(data.profileStats);
 
-      if (data.repos.length < 10) {
-        setHasMore(false); // No more repos to load
+          // Extract unique languages from all repositories
+          const languages = new Set();
+          data.repos.forEach((repo) => {
+            Object.keys(repo.languages).forEach((lang) => languages.add(lang));
+          });
+          setAvailableLanguages([...languages]);
+
+          if (data.repos.length < 10) {
+            setHasMore(false); // No more repos to load
+          }
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchDataAndSet();
