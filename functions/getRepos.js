@@ -1,7 +1,18 @@
 export async function onRequest(context) {
     // Access the environment variable
     const token = context.env.GITHUB_TOKEN; // Fetch the GitHub token from env variables
+    const rateLimitResponse = await fetch('https://api.github.com/rate_limit', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
     
+      const rateLimitData = await rateLimitResponse.json();
+      console.log('Rate Limit Data:', rateLimitData);
+    
+      return new Response(JSON.stringify(rateLimitData), {
+        headers: { 'Content-Type': 'application/json' },
+      });
     if (!token) {
       return new Response(JSON.stringify({ error: "Missing GitHub token" }), {
         headers: { 'Content-Type': 'application/json' },
