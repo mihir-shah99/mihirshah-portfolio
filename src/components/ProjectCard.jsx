@@ -1,7 +1,8 @@
+// src/components/ProjectCard.jsx
 import React from 'react';
 import { formatDistanceToNow } from 'date-fns'; // To format dates
 
-// Mapping popular languages to colors
+// It's better to move this to a separate file to avoid duplication
 const languageColors = {
   JavaScript: '#f1e05a',
   Python: '#3572A5',
@@ -11,11 +12,11 @@ const languageColors = {
   Shell: '#89e051',
   Dockerfile: '#384d54',
   Kubernetes: '#326ce5',
-  Vue: "#41b883", 
-  Go: "#00ADD8",  
-  PHP: "#4F5D95",
-  AIDL: "#34B7F1", 
-  TypeScript: "#3178C6"
+  Vue: '#41b883',
+  Go: '#00ADD8',
+  PHP: '#4F5D95',
+  AIDL: '#34B7F1',
+  TypeScript: '#3178C6',
 };
 
 const ProjectCard = React.memo(({ repo }) => {
@@ -31,15 +32,19 @@ const ProjectCard = React.memo(({ repo }) => {
 
         {/* Programming Languages */}
         <div className="flex flex-wrap justify-center items-center mb-4">
-          {Object.keys(repo.languages).map((language) => (
-            <div key={language} className="flex items-center mr-2 mb-2">
-              <div
-                className="w-4 h-4 rounded-full mr-2"
-                style={{ backgroundColor: languageColors[language] || '#cccccc' }}
-              ></div>
-              <span className="text-sm text-gray-600">{language}</span>
-            </div>
-          ))}
+          {repo.languages && Object.keys(repo.languages).length > 0 ? (
+            Object.keys(repo.languages).map((language) => (
+              <div key={language} className="flex items-center mr-2 mb-2">
+                <div
+                  className="w-4 h-4 rounded-full mr-2"
+                  style={{ backgroundColor: languageColors[language] || '#cccccc' }}
+                ></div>
+                <span className="text-sm text-gray-600">{language}</span>
+              </div>
+            ))
+          ) : (
+            <span className="text-sm text-gray-600">No languages data</span>
+          )}
         </div>
 
         {/* Star, Fork Count */}
