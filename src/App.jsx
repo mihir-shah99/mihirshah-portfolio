@@ -11,6 +11,7 @@ import BlogPage from './pages/BlogPage';
 import BlogPost from './components/Blog/BlogPost';
 import NotFound from './pages/NotFound';
 import BookPage from './pages/BookPage';
+import ExperiencePage from './pages/ExperiencePage';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             <Route path="/skills" element={<SkillsPage />} />
             <Route path="/book" element={<BookPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/experience" element={<ExperiencePage />} />
             <Route path="/book" element={<BookPage />} />
             <Route path="/blog" element={<BlogPage />} />
             <Route path="/blog/:slug" element={<BlogPost />} /> {/* Dynamic Blog Post Route */}
