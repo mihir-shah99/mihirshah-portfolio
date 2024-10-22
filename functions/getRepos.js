@@ -1,6 +1,6 @@
-export async function onRequest(context) {
+export async function onRequest(context, env) {
     const GITHUB_API_URL = 'https://api.github.com/users/mihir-shah99/repos';
-    const token = context.env.GITHUB_TOKEN;  // Get GitHub Token from env variable
+    const token = env.GITHUB_TOKEN;  // Get GitHub Token from env variable
   
     try {
       const response = await fetch(GITHUB_API_URL, {
