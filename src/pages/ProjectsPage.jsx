@@ -13,6 +13,7 @@ const fetchData = async (page = 1, perPage = 10) => {
   return data;
 };
 
+// Mapping popular languages to colors
 const languageColors = {
   JavaScript: '#f1e05a',
   Python: '#3572A5',
@@ -51,10 +52,12 @@ const ProjectsPage = () => {
           setRepos((prevRepos) => [...prevRepos, ...data.repos]);
           setProfileStats(data.profileStats);
 
-          // Extract unique languages from all repositories
+          // Extract unique languages from all repositories safely
           const languages = new Set();
           data.repos.forEach((repo) => {
-            Object.keys(repo.languages).forEach((lang) => languages.add(lang));
+            if (repo.languages) {
+              Object.keys(repo.languages).forEach((lang) => languages.add(lang));
+            }
           });
           setAvailableLanguages([...languages]);
 
@@ -90,7 +93,7 @@ const ProjectsPage = () => {
   // Filter repositories based on search and language
   const filteredRepos = repos.filter((repo) => {
     const matchesSearch = repo.name.toLowerCase().includes(searchQuery) || (repo.description && repo.description.toLowerCase().includes(searchQuery));
-    const matchesLanguage = selectedLanguage === "" || Object.keys(repo.languages).includes(selectedLanguage);
+    const matchesLanguage = selectedLanguage === "" || (repo.languages && Object.keys(repo.languages).includes(selectedLanguage));
     return matchesSearch && matchesLanguage;
   });
 
