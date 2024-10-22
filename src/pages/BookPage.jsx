@@ -1,6 +1,9 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import bookCover from '../assets/images/book.jpg';
+import threatIcon from '../assets/images/threat.jpg';
+import architectureIcon from '../assets/images/architecture.jpg';
+import complianceIcon from '../assets/images/compliance.jpg';
 
 const BookPage = () => {
   // Connecting Dots Animation Logic
@@ -81,26 +84,23 @@ const BookPage = () => {
     {
       title: 'Threat Modeling',
       description: 'Learn how to identify, analyze, and mitigate threats in cloud-native environments.',
-      icon: '../src/assets/images/threat.jpg', 
+      icon: threatIcon, // Use imported images
     },
     {
       title: 'Secure Architecture',
       description: 'Understand the fundamentals of building secure, scalable cloud architectures.',
-      icon: '../src/assets/images/architecture.jpg',
+      icon: architectureIcon,
     },
     {
       title: 'Compliance Best Practices',
       description: 'Explore regulatory compliance strategies for cloud-native environments.',
-      icon: '../src/assets/images/compliance.jpg',
-    }
+      icon: complianceIcon,
+    },
   ];
 
   return (
     <section className="min-h-screen bg-dark-blue relative text-white">
-      {/* Canvas for background animation */}
       <canvas id="dotsCanvas" className="absolute top-0 left-0 w-full h-full z-0"></canvas>
-
-      {/* Hero Section Content */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center">
         <motion.img 
           src={bookCover} 
@@ -117,26 +117,27 @@ const BookPage = () => {
           Start Your Journey
         </motion.a>
       </div>
+
       <section id="highlights" className="py-20 bg-gradient-to-r from-gray-100 to-gray-300">
-  <h2 className="text-4xl font-bold text-center mb-12 text-gray-900">Key Sections of the Book</h2>
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
-    {highlights.map((highlight, index) => (
-      <motion.div
-        key={index}
-        className="p-6 bg-white rounded-lg shadow-lg hover:shadow-2xl cursor-pointer transform transition-all duration-500"
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: index * 0.2 }}
-        whileHover={{ scale: 1.1, translateY: '-10px' }}
-      >
-        <img src={highlight.icon} alt={`Icon ${index + 1}`} className="w-16 h-16 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-center mb-4 text-gray-900">{highlight.title}</h3>
-        <p className="text-gray-600 text-center">{highlight.description}</p>
-      </motion.div>
-    ))}
-  </div>
-</section>
+        <h2 className="text-4xl font-bold text-center mb-12 text-gray-900">Key Sections of the Book</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
+          {highlights.map((highlight, index) => (
+            <motion.div
+              key={index}
+              className="p-6 bg-white rounded-lg shadow-lg hover:shadow-2xl cursor-pointer transform transition-all duration-500"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.2 }}
+              whileHover={{ scale: 1.1, translateY: '-10px' }}
+            >
+              <img src={highlight.icon} alt={`Icon ${index + 1}`} className="w-16 h-16 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-center mb-4 text-gray-900">{highlight.title}</h3>
+              <p className="text-gray-600 text-center">{highlight.description}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
 
 {/* Sliding Reviews */}
 <div className="py-20 bg-gray-50">
