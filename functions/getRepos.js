@@ -1,6 +1,5 @@
 export async function onRequest(context) {
     // Access the environment variable
-    console.log("GITHUB_TOKEN:", context.env.GITHUB_TOKEN);
     const token = context.env.GITHUB_TOKEN; // Fetch the GitHub token from env variables
     
     if (!token) {
@@ -15,7 +14,7 @@ export async function onRequest(context) {
     try {
       const response = await fetch(GITHUB_API_URL, {
         headers: {
-          'Authorization': `Bearer ${token}`,  // Use the token from environment
+          'Authorization': `token ${token}`,  // Use the token from environment
           'Accept': 'application/vnd.github.v3+json',
         },
       });
