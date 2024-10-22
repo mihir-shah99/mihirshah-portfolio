@@ -6,11 +6,28 @@ import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import ProjectCard from './ProjectCard'; // Separate ProjectCard Component
 
-// Helper function to fetch data from Cloudflare Worker
-const fetchData = async (page = 1, perPage = 10) => {
+// Helper function to fetch repositories and their languages from Cloudflare Worker
+const fetchReposAndLanguages = async (page = 1, perPage = 10) => {
   const response = await fetch(`/getRepos?page=${page}&per_page=${perPage}`);
-  const data = await response.json();
-  return data;
+  const repos = await response.json();
+
+  // Fetch languages for each repo
+  const reposWithLanguages = await Promise.all(
+    repos.map(async (repo) => {
+      const languagesResponse = await fetch(repo.languages_url);
+      const languages = await languagesResponse.json();
+      return { ...repo, languages };
+    })
+  );
+
+  return reposWithLanguages;
+};
+
+// Helper function to fetch GitHub profile stats from Cloudflare Worker
+const fetchProfileStats = async () => {
+  const response = await fetch(`/getProfileStats`);
+  const stats = await response.json();
+  return stats;
 };
 
 // Mapping popular languages to colors
@@ -35,44 +52,39 @@ const featuredProjectsNames = ["touch2fa", "VulnDroid", "Learning-Linux"];
 
 const ProjectsPage = () => {
   const [repos, setRepos] = useState([]);
-  const [profileStats, setProfileStats] = useState({ followers: 0, publicRepos: 0, totalStars: 0 });
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true); // To track if more repos are available
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("");
   const [availableLanguages, setAvailableLanguages] = useState([]);
+  const [profileStats, setProfileStats] = useState({ followers: 0, publicRepos: 0, totalStars: 0 });
 
   useEffect(() => {
-    const fetchDataAndSet = async () => {
-      try {
-        const data = await fetchData(page, 10);
+    const fetchReposAndSet = async () => {
+      const repositories = await fetchReposAndLanguages(page, 10);
+      setRepos((prevRepos) => [...prevRepos, ...repositories]);
 
-        if (data.repos.length > 0) {
-          setRepos((prevRepos) => [...prevRepos, ...data.repos]);
-          setProfileStats(data.profileStats);
+      // Extract unique languages from all repositories
+      const languages = new Set();
+      repositories.forEach((repo) => {
+        Object.keys(repo.languages).forEach((lang) => languages.add(lang));
+      });
+      setAvailableLanguages([...languages]);
 
-          // Extract unique languages from all repositories safely
-          const languages = new Set();
-          data.repos.forEach((repo) => {
-            if (repo.languages) {
-              Object.keys(repo.languages).forEach((lang) => languages.add(lang));
-            }
-          });
-          setAvailableLanguages([...languages]);
-
-          if (data.repos.length < 10) {
-            setHasMore(false); // No more repos to load
-          }
-        }
-        setLoading(false);
-      } catch (error) {
-        console.error('Failed to load data:', error);
-        setLoading(false);
+      if (repositories.length < 10) {
+        setHasMore(false); // No more repos to load
       }
+      setLoading(false);
     };
 
-    fetchDataAndSet();
+    const fetchProfileStatsAndSet = async () => {
+      const stats = await fetchProfileStats();
+      setProfileStats(stats);
+    };
+
+    fetchProfileStatsAndSet();
+    fetchReposAndSet();
   }, [page]);
 
   // Function to handle search input
@@ -93,7 +105,7 @@ const ProjectsPage = () => {
   // Filter repositories based on search and language
   const filteredRepos = repos.filter((repo) => {
     const matchesSearch = repo.name.toLowerCase().includes(searchQuery) || (repo.description && repo.description.toLowerCase().includes(searchQuery));
-    const matchesLanguage = selectedLanguage === "" || (repo.languages && Object.keys(repo.languages).includes(selectedLanguage));
+    const matchesLanguage = selectedLanguage === "" || Object.keys(repo.languages).includes(selectedLanguage);
     return matchesSearch && matchesLanguage;
   });
 
