@@ -6,28 +6,11 @@ import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import ProjectCard from './ProjectCard'; // Separate ProjectCard Component
 
-// Helper function to fetch repositories and their languages from Cloudflare Worker
-const fetchReposAndLanguages = async (page = 1, perPage = 10) => {
+// Helper function to fetch both repositories and profile stats from Cloudflare Worker
+const fetchReposAndProfileStats = async (page = 1, perPage = 10) => {
   const response = await fetch(`/getRepos?page=${page}&per_page=${perPage}`);
-  const repos = await response.json();
-
-  // Fetch languages for each repo
-  const reposWithLanguages = await Promise.all(
-    repos.map(async (repo) => {
-      const languagesResponse = await fetch(repo.languages_url);
-      const languages = await languagesResponse.json();
-      return { ...repo, languages };
-    })
-  );
-
-  return reposWithLanguages;
-};
-
-// Helper function to fetch GitHub profile stats from Cloudflare Worker
-const fetchProfileStats = async () => {
-  const response = await fetch(`/getProfileStats`);
-  const stats = await response.json();
-  return stats;
+  const data = await response.json();
+  return data; // { profileStats, repositories }
 };
 
 // Mapping popular languages to colors
@@ -40,10 +23,10 @@ const languageColors = {
   Shell: '#89e051',
   Dockerfile: '#384d54',
   Kubernetes: '#326ce5',
-  Vue: "#41b883", 
-  Go: "#00ADD8",  
+  Vue: "#41b883",
+  Go: "#00ADD8",
   PHP: "#4F5D95",
-  AIDL: "#34B7F1", 
+  AIDL: "#34B7F1",
   TypeScript: "#3178C6"
 };
 
@@ -62,8 +45,10 @@ const ProjectsPage = () => {
 
   useEffect(() => {
     const fetchReposAndSet = async () => {
-      const repositories = await fetchReposAndLanguages(page, 10);
+      const { profileStats, repositories } = await fetchReposAndProfileStats(page, 10);
+      
       setRepos((prevRepos) => [...prevRepos, ...repositories]);
+      setProfileStats(profileStats); // Set the profile stats
 
       // Extract unique languages from all repositories
       const languages = new Set();
@@ -78,12 +63,6 @@ const ProjectsPage = () => {
       setLoading(false);
     };
 
-    const fetchProfileStatsAndSet = async () => {
-      const stats = await fetchProfileStats();
-      setProfileStats(stats);
-    };
-
-    fetchProfileStatsAndSet();
     fetchReposAndSet();
   }, [page]);
 
