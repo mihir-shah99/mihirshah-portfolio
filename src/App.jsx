@@ -11,6 +11,9 @@ import BlogPage from './pages/BlogPage';
 import NotFound from './pages/NotFound';
 import BookPage from './pages/BookPage';
 import ExperiencePage from './pages/ExperiencePage';
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+
 
 function App() {
   return (
