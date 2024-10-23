@@ -1,5 +1,5 @@
 // src/pages/ProjectsPage.jsx
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef, Suspense } from 'react';
 import Slider from 'react-slick'; // Import the carousel slider
 import {
   FaStar,
@@ -9,7 +9,8 @@ import {
 } from 'react-icons/fa'; // Icons for GitHub stats
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
-import ProjectCard from '../components/ProjectCard'; // Adjust the path as necessary
+// Lazy load the ProjectCard component
+const ProjectCard = React.lazy(() => import('../components/ProjectCard')); // Adjust the path as necessary
 
 // Import CSS for react-slick
 import 'slick-carousel/slick/slick.css';
@@ -17,9 +18,6 @@ import 'slick-carousel/slick/slick-theme.css';
 
 // Define featured project names manually
 const featuredProjectsNames = ['touch2fa', 'VulnDroid', 'Learning-Linux'];
-
-// ⚠️ WARNING: Hardcoding your GitHub token is insecure. Use environment variables or server-side proxies in production.
-const GITHUB_TOKEN = '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'; // Replace with your actual token
 
 const ProjectsPage = () => {
   const [repos, setRepos] = useState([]);
@@ -46,271 +44,216 @@ const ProjectsPage = () => {
   // Backoff state
   const [isBackoff, setIsBackoff] = useState(false);
 
-  const GITHUB_API_BASE = 'https://api.github.com';
-
   // Define thresholds and delays
   const RATE_LIMIT_THRESHOLD = 100;
   const BACKOFF_THRESHOLD = 200;
   const BACKOFF_DELAY = 30000; // 30 seconds
 
+  // In-memory cache using useRef
+  const cache = useRef({
+    profileStats: null,
+    repos: {},
+  });
+
+  // Define the Cloudflare Worker base URL from environment variables
+  const WORKER_BASE_URL = import.meta.env.VITE_WORKER_URL; // Ensure this is set in your .env file
+
   // Helper function to update rate limit state
-  const updateRateLimit = (headers) => {
-    const limit = parseInt(headers.get('X-RateLimit-Limit'), 10);
-    const remaining = parseInt(headers.get('X-RateLimit-Remaining'), 10);
-    const reset = parseInt(headers.get('X-RateLimit-Reset'), 10) * 1000; // Convert to milliseconds
-    setRateLimit({ limit, remaining, reset });
-  };
+  const updateRateLimit = useCallback((headers) => {
+    const limit = parseInt(headers.get('X-RateLimit-Limit'), 10)
+    const remaining = parseInt(headers.get('X-RateLimit-Remaining'), 10)
+    const reset = parseInt(headers.get('X-RateLimit-Reset'), 10) * 1000 // Convert to milliseconds
+    setRateLimit({ limit, remaining, reset })
+  }, [])
 
-  // Helper function to fetch repositories and their languages directly from GitHub API
-  const fetchReposAndLanguages = async (pageNumber = 1, perPage = 20) => {
+  /**
+   * Fetches data from the Cloudflare Worker.
+   * @param {number} pageNumber - The current page number for pagination.
+   * @param {number} perPage - Number of repositories per page.
+   * @returns {object|null} - Returns the fetched data or null in case of an error.
+   */
+  const fetchProjectsData = useCallback(async (pageNumber = 1, perPage = 20) => {
     try {
-      const reposResponse = await fetch(
-        `${GITHUB_API_BASE}/user/repos?visibility=public&affiliation=owner&per_page=${perPage}&page=${pageNumber}`,
-        {
-          headers: {
-            Authorization: `token ${GITHUB_TOKEN}`,
-            Accept: 'application/vnd.github.v3+json',
-          },
-        }
-      );
-
-      // Update rate limit based on response headers
-      updateRateLimit(reposResponse.headers);
-
-      if (!reposResponse.ok) {
-        const errorData = await reposResponse.json();
-        throw new Error(
-          `Failed to fetch repositories: ${reposResponse.status} ${reposResponse.statusText} - ${errorData.message}`
-        );
+      const cacheKey = `page_${pageNumber}_perPage_${perPage}`
+      // Check if data is in cache
+      if (cache.current.repos[cacheKey]) {
+        return cache.current.repos[cacheKey]
       }
 
-      const reposData = await reposResponse.json();
+      // Construct the Worker URL with query parameters
+      const url = `${WORKER_BASE_URL}?page=${pageNumber}&perPage=${perPage}`
 
-      // Fetch languages for each repo
-      const reposWithLanguages = await Promise.all(
-        reposData.map(async (repo) => {
-          try {
-            const languagesResponse = await fetch(repo.languages_url, {
-              headers: {
-                Authorization: `token ${GITHUB_TOKEN}`,
-                Accept: 'application/vnd.github.v3+json',
-              },
-            });
+      const response = await fetch(url)
 
-            // Update rate limit based on response headers
-            updateRateLimit(languagesResponse.headers);
+      // Update rate limit based on response headers
+      updateRateLimit(response.headers)
 
-            if (!languagesResponse.ok) {
-              const langErrorData = await languagesResponse.json();
-              throw new Error(
-                `Failed to fetch languages for repo "${repo.name}": ${languagesResponse.status} ${languagesResponse.statusText} - ${langErrorData.message}`
-              );
-            }
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(`Failed to fetch data: ${errorData.message}`)
+      }
 
-            const languages = await languagesResponse.json();
-            return { ...repo, languages };
-          } catch (langError) {
-            console.error(langError);
-            return { ...repo, languages: {} }; // Fallback to empty languages
-          }
-        })
-      );
+      const data = await response.json()
 
-      return reposWithLanguages;
+      // Cache the fetched repos
+      cache.current.repos[cacheKey] = data
+
+      return data
     } catch (err) {
-      console.error(err);
-      setError(err.message);
-      return [];
+      console.error(err)
+      setError(err.message)
+      return null
     }
-  };
+  }, [WORKER_BASE_URL, updateRateLimit])
 
-  // Helper function to fetch GitHub profile stats directly from GitHub API
-  const fetchProfileStats = async () => {
-    try {
-      // Fetch user profile
-      const userResponse = await fetch(`${GITHUB_API_BASE}/user`, {
-        headers: {
-          Authorization: `token ${GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-      });
-
-      // Update rate limit based on response headers
-      updateRateLimit(userResponse.headers);
-
-      if (!userResponse.ok) {
-        const userErrorData = await userResponse.json();
-        throw new Error(
-          `Failed to fetch user profile: ${userResponse.status} ${userResponse.statusText} - ${userErrorData.message}`
-        );
-      }
-
-      const userData = await userResponse.json();
-
-      // Fetch starred repositories
-      const starredReposResponse = await fetch(
-        `${GITHUB_API_BASE}/user/starred?per_page=100`,
-        {
-          headers: {
-            Authorization: `token ${GITHUB_TOKEN}`,
-            Accept: 'application/vnd.github.v3+json',
-          },
-        }
-      );
-
-      // Update rate limit based on response headers
-      updateRateLimit(starredReposResponse.headers);
-
-      if (!starredReposResponse.ok) {
-        const starredErrorData = await starredReposResponse.json();
-        throw new Error(
-          `Failed to fetch starred repositories: ${starredReposResponse.status} ${starredReposResponse.statusText} - ${starredErrorData.message}`
-        );
-      }
-
-      const starredRepos = await starredReposResponse.json();
-      const totalStars = starredRepos.length;
-
-      return {
-        followers: userData.followers,
-        publicRepos: userData.public_repos,
-        totalStars: totalStars,
-      };
-    } catch (err) {
-      console.error(err);
-      setError(err.message);
-      return { followers: 0, publicRepos: 0, totalStars: 0 };
-    }
-  };
-
+  /**
+   * Fetches and sets GitHub profile stats and repositories.
+   */
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
+      setLoading(true)
       try {
-        const repositories = await fetchReposAndLanguages(page, 20); // perPage = 20
-        // Filter out duplicate repositories based on id
-        setRepos((prevRepos) => {
-          const existingRepoIds = new Set(prevRepos.map((repo) => repo.id));
-          const newRepos = repositories.filter((repo) => !existingRepoIds.has(repo.id));
-          return [...prevRepos, ...newRepos];
-        });
+        const data = await fetchProjectsData(page, 20) // perPage = 20
 
-        // Extract unique languages from all repositories
-        const languages = new Set();
-        repositories.forEach((repo) => {
+        if (!data) {
+          setLoading(false)
+          return
+        }
+
+        const { profileStats: fetchedProfileStats, repos: fetchedRepos } = data
+
+        // Set profileStats if not already set
+        if (!cache.current.profileStats) {
+          setProfileStats(fetchedProfileStats)
+          cache.current.profileStats = fetchedProfileStats
+        }
+
+        // Append new repos, avoiding duplicates based on repo id
+        setRepos((prevRepos) => {
+          const existingRepoIds = new Set(prevRepos.map((repo) => repo.id))
+          const newRepos = fetchedRepos.filter((repo) => !existingRepoIds.has(repo.id))
+          return [...prevRepos, ...newRepos]
+        })
+
+        // Extract unique languages from fetched repositories
+        const languages = new Set()
+        fetchedRepos.forEach((repo) => {
           if (repo.languages) {
-            Object.keys(repo.languages).forEach((lang) => languages.add(lang));
+            Object.keys(repo.languages).forEach((lang) => languages.add(lang))
           }
-        });
+        })
 
         setAvailableLanguages((prevLanguages) => {
-          const updatedLanguages = new Set([...prevLanguages, ...languages]);
-          return Array.from(updatedLanguages).sort(); // Sort alphabetically
-        });
+          const updatedLanguages = new Set([...prevLanguages, ...languages])
+          return Array.from(updatedLanguages).sort() // Sort alphabetically
+        })
 
-        if (repositories.length < 20) { // Adjusted to match perPage
-          setHasMore(false); // No more repos to load
+        // Determine if more repos are available
+        if (fetchedRepos.length < 20) { // Adjusted to match perPage
+          setHasMore(false) // No more repos to load
         }
       } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('An error occurred while fetching data.');
+        console.error('Error fetching data:', err)
+        setError('An error occurred while fetching data.')
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-
-    const fetchStats = async () => {
-      const stats = await fetchProfileStats();
-      setProfileStats(stats);
-    };
+    }
 
     // Before fetching data, check if rate limit is exceeded
     if (rateLimit.remaining === 0) {
-      const now = Date.now();
+      const now = Date.now()
       if (rateLimit.reset && now < rateLimit.reset) {
-        const timeUntilResetMs = rateLimit.reset - now;
-        const minutes = Math.floor(timeUntilResetMs / 60000);
-        const seconds = Math.floor((timeUntilResetMs % 60000) / 1000);
-        setError(`GitHub API rate limit exceeded. Please try again in ${minutes}m ${seconds}s.`);
-        setLoading(false);
-        return;
+        const timeUntilResetMs = rateLimit.reset - now
+        const minutes = Math.floor(timeUntilResetMs / 60000)
+        const seconds = Math.floor((timeUntilResetMs % 60000) / 1000)
+        setError(`GitHub API rate limit exceeded. Please try again in ${minutes}m ${seconds}s.`)
+        setLoading(false)
+        return
       } else {
         // Reset the rate limit if the reset time has passed
-        setRateLimit((prev) => ({ ...prev, remaining: prev.limit }));
+        setRateLimit((prev) => ({ ...prev, remaining: prev.limit }))
       }
     }
 
-    fetchStats();
-    fetchData();
-  }, [page, rateLimit.remaining, rateLimit.reset]);
+    fetchData()
+  }, [page, rateLimit.remaining, rateLimit.reset, fetchProjectsData])
 
   // Function to handle search input
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value.toLowerCase());
-  };
+  const handleSearchChange = useCallback((e) => {
+    setSearchQuery(e.target.value.toLowerCase())
+  }, [])
 
   // Function to handle language filter
-  const handleLanguageChange = (e) => {
-    setSelectedLanguage(e.target.value);
-  };
+  const handleLanguageChange = useCallback((e) => {
+    setSelectedLanguage(e.target.value)
+  }, [])
 
-  // Function to load more repos when clicking "Load More"
-  const loadMoreRepos = () => {
+  /**
+   * Loads more repositories when the "Load More Projects" button is clicked.
+   */
+  const loadMoreRepos = useCallback(() => {
     if (hasMore && !loading && rateLimit.remaining > 0 && !isBackoff) {
       if (rateLimit.remaining <= BACKOFF_THRESHOLD) {
-        setIsBackoff(true);
+        setIsBackoff(true)
         // Inform the user
-        setError(`Approaching GitHub API rate limit. Delaying further requests for ${BACKOFF_DELAY / 1000} seconds.`);
+        setError(`Approaching GitHub API rate limit. Delaying further requests for ${BACKOFF_DELAY / 1000} seconds.`)
         // Set a timeout to remove backoff after delay
         setTimeout(() => {
-          setIsBackoff(false);
-          setError(null); // Clear the error message
-          setPage((prevPage) => prevPage + 1);
-        }, BACKOFF_DELAY);
+          setIsBackoff(false)
+          setError(null) // Clear the error message
+          setPage((prevPage) => prevPage + 1)
+        }, BACKOFF_DELAY)
       } else {
-        setPage((prevPage) => prevPage + 1);
+        setPage((prevPage) => prevPage + 1)
       }
     }
-  };
+  }, [hasMore, loading, rateLimit.remaining, isBackoff])
 
-  // Filter repositories based on search and language using useMemo for performance
+  /**
+   * Filters repositories based on search query and selected programming language.
+   */
   const filteredRepos = useMemo(() => {
     return repos.filter((repo) => {
       const matchesSearch =
         repo.name.toLowerCase().includes(searchQuery) ||
-        (repo.description && repo.description.toLowerCase().includes(searchQuery));
+        (repo.description && repo.description.toLowerCase().includes(searchQuery))
       const matchesLanguage =
-        selectedLanguage === '' || (repo.languages && repo.languages[selectedLanguage]);
-      return matchesSearch && matchesLanguage;
-    });
-  }, [repos, searchQuery, selectedLanguage]);
+        selectedLanguage === '' || (repo.languages && repo.languages[selectedLanguage])
+      return matchesSearch && matchesLanguage
+    })
+  }, [repos, searchQuery, selectedLanguage])
 
-  // Separate featured projects
+  /**
+   * Separates featured projects from regular repositories.
+   */
   const featuredRepos = useMemo(() => {
     return filteredRepos.filter((repo) =>
       featuredProjectsNames.includes(repo.name)
-    );
-  }, [filteredRepos]);
+    )
+  }, [filteredRepos])
 
   const regularRepos = useMemo(() => {
     return filteredRepos.filter(
       (repo) => !featuredProjectsNames.includes(repo.name)
-    );
-  }, [filteredRepos]);
+    )
+  }, [filteredRepos])
 
-  // Calculate time until rate limit reset
+  /**
+   * Calculates the time remaining until the GitHub API rate limit resets.
+   */
   const timeUntilReset = useMemo(() => {
-    if (!rateLimit.reset) return null;
-    const now = Date.now();
-    const difference = rateLimit.reset - now;
-    if (difference <= 0) return null;
-    const minutes = Math.floor(difference / 60000);
-    const seconds = Math.floor((difference % 60000) / 1000);
-    return `${minutes}m ${seconds}s`;
-  }, [rateLimit.reset]);
+    if (!rateLimit.reset) return null
+    const now = Date.now()
+    const difference = rateLimit.reset - now
+    if (difference <= 0) return null
+    const minutes = Math.floor(difference / 60000)
+    const seconds = Math.floor((difference % 60000) / 1000)
+    return `${minutes}m ${seconds}s`
+  }, [rateLimit.reset])
 
   // Slick carousel settings for mobile
-  const sliderSettings = {
+  const sliderSettings = useMemo(() => ({
     dots: true,
     infinite: false,
     speed: 500,
@@ -318,7 +261,7 @@ const ProjectsPage = () => {
     slidesToScroll: 1,
     arrows: true,
     accessibility: true, // Enable accessibility features
-  };
+  }), [])
 
   return (
     <div className="container mx-auto py-20 px-4">
@@ -453,9 +396,9 @@ const ProjectsPage = () => {
               <div className="block md:hidden">
                 <Slider {...sliderSettings}>
                   {featuredRepos.map((repo) => (
-                    <div key={repo.id} className="p-4">
+                    <Suspense fallback={<div>Loading project...</div>} key={repo.id}>
                       <ProjectCard repo={repo} />
-                    </div>
+                    </Suspense>
                   ))}
                 </Slider>
               </div>
@@ -463,7 +406,9 @@ const ProjectsPage = () => {
               {/* Grid for Desktop View */}
               <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 gap-8">
                 {featuredRepos.map((repo) => (
-                  <ProjectCard key={repo.id} repo={repo} />
+                  <Suspense fallback={<div>Loading project...</div>} key={repo.id}>
+                    <ProjectCard repo={repo} />
+                  </Suspense>
                 ))}
               </div>
             </div>
@@ -476,9 +421,9 @@ const ProjectsPage = () => {
           <div className="block md:hidden">
             <Slider {...sliderSettings}>
               {regularRepos.map((repo) => (
-                <div key={repo.id} className="p-4">
+                <Suspense fallback={<div>Loading project...</div>} key={repo.id}>
                   <ProjectCard repo={repo} />
-                </div>
+                </Suspense>
               ))}
             </Slider>
           </div>
@@ -486,7 +431,9 @@ const ProjectsPage = () => {
           {/* Grid for Desktop */}
           <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             {regularRepos.map((repo) => (
-              <ProjectCard key={repo.id} repo={repo} />
+              <Suspense fallback={<div>Loading project...</div>} key={repo.id}>
+                <ProjectCard repo={repo} />
+              </Suspense>
             ))}
           </div>
 
@@ -509,7 +456,8 @@ const ProjectsPage = () => {
         </>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default ProjectsPage;
+// Memoize the ProjectsPage component to prevent unnecessary re-renders
+export default React.memo(ProjectsPage)
