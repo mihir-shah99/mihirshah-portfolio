@@ -463,8 +463,7 @@ const ProjectsPage = () => {
       )}
     </div>
   );
-
-  // Memoize the ProjectsPage component to prevent unnecessary re-renders
 };
 
+// Memoize the ProjectsPage component to prevent unnecessary re-renders
 export default React.memo(ProjectsPage);

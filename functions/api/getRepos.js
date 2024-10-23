@@ -40,7 +40,7 @@ export async function onRequestGet({ request, env }) {
       });
     }
 
-    // Function to extract rate limit information
+    // Helper function to extract rate limit information
     const extractRateLimit = (headers) => {
       const limit = parseInt(headers.get('X-RateLimit-Limit'), 10) || null;
       const remaining = parseInt(headers.get('X-RateLimit-Remaining'), 10) || null;
@@ -48,28 +48,53 @@ export async function onRequestGet({ request, env }) {
       return { limit, remaining, reset };
     };
 
+    // Helper function to fetch and parse JSON with proper error handling
+    const fetchAndParseJSON = async (url, options, contextDescription) => {
+      const response = await fetch(url, options);
+      const rateLimit = extractRateLimit(response.headers);
+
+      if (!response.ok) {
+        // Clone the response to read it as text without affecting the original response
+        const clonedResponse = response.clone();
+        let errorMessage = `Failed to fetch ${contextDescription}: ${response.statusText}`;
+
+        try {
+          const errorData = await clonedResponse.json();
+          if (errorData && errorData.message) {
+            errorMessage = `Failed to fetch ${contextDescription}: ${errorData.message}`;
+          }
+        } catch (jsonError) {
+          const responseText = await clonedResponse.text();
+          console.error(`Failed to parse error response for ${contextDescription}:`, responseText);
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      try {
+        const data = await response.json();
+        return { data, rateLimit };
+      } catch (jsonError) {
+        const responseText = await response.text();
+        console.error(`Failed to parse JSON for ${contextDescription}:`, responseText);
+        throw new Error(`Invalid JSON response for ${contextDescription}: ${jsonError.message}`);
+      }
+    };
+
     // Fetch user profile
     console.log('Fetching user profile');
-    const profileResponse = await fetch('https://api.github.com/user', {
+    const profileURL = 'https://api.github.com/user';
+    const profileOptions = {
       headers: {
         'Authorization': `token ${GITHUB_TOKEN}`,
         'Accept': 'application/vnd.github.v3+json',
       },
-    });
+    };
 
-    const profileRateLimit = extractRateLimit(profileResponse.headers);
+    const { data: profileData, rateLimit: profileRateLimit } = await fetchAndParseJSON(profileURL, profileOptions, 'user profile');
+
     console.log('Profile Rate Limit:', profileRateLimit);
-
-    let profileData;
-    if (profileResponse.ok) {
-      profileData = await profileResponse.json();
-      console.log('Fetched Profile Data:', profileData);
-    } else {
-      const errorData = await profileResponse.json().catch(() => null);
-      const errorMessage = errorData?.message || 'Failed to fetch user profile.';
-      console.error('Error fetching user profile:', errorMessage);
-      throw new Error(errorMessage);
-    }
+    console.log('Fetched Profile Data:', profileData);
 
     // Fetch repositories with pagination
     const url = new URL(request.url);
@@ -77,69 +102,55 @@ export async function onRequestGet({ request, env }) {
     const perPage = url.searchParams.get('perPage') || '20';
 
     console.log(`Fetching repositories: page=${page}, perPage=${perPage}`);
-    const reposResponse = await fetch(`https://api.github.com/user/repos?visibility=public&affiliation=owner&per_page=${perPage}&page=${page}`, {
+    const reposURL = `https://api.github.com/user/repos?visibility=public&affiliation=owner&per_page=${perPage}&page=${page}`;
+    const reposOptions = {
       headers: {
         'Authorization': `token ${GITHUB_TOKEN}`,
         'Accept': 'application/vnd.github.v3+json',
       },
-    });
+    };
 
-    const reposRateLimit = extractRateLimit(reposResponse.headers);
+    const { data: reposData, rateLimit: reposRateLimit } = await fetchAndParseJSON(reposURL, reposOptions, 'repositories');
+
     console.log('Repositories Rate Limit:', reposRateLimit);
+    console.log('Fetched Repositories:', reposData);
 
-    let reposData;
-    if (reposResponse.ok) {
-      reposData = await reposResponse.json();
-      console.log('Fetched Repositories:', reposData);
-    } else {
-      const errorData = await reposResponse.json().catch(() => null);
-      const errorMessage = errorData?.message || 'Failed to fetch repositories.';
-      console.error('Error fetching repositories:', errorMessage);
-      throw new Error(errorMessage);
-    }
-
-    // Fetch languages for each repository in parallel with limited concurrency
+    // Fetch languages for each repository with controlled concurrency
     console.log('Fetching languages for each repository');
     const concurrencyLimit = 5; // Adjust based on rate limits and performance
     const reposWithLanguages = [];
     const queue = [...reposData]; // Clone the array to prevent mutation
 
+    // Helper function to process a single repository's languages
+    const processRepoLanguages = async (repo) => {
+      try {
+        const languagesURL = repo.languages_url;
+        const languagesOptions = {
+          headers: {
+            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github.v3+json',
+          },
+        };
+
+        const { data: languagesData, rateLimit: languagesRateLimit } = await fetchAndParseJSON(languagesURL, languagesOptions, `languages for repo "${repo.name}"`);
+
+        console.log(`Languages Rate Limit for ${repo.name}:`, languagesRateLimit);
+        console.log(`Fetched Languages for ${repo.name}:`, languagesData);
+
+        return { ...repo, languages: languagesData };
+      } catch (error) {
+        console.error(error.message);
+        return { ...repo, languages: {} }; // Fallback to empty languages
+      }
+    };
+
     // Helper function to process the queue with limited concurrency
     const processQueue = async () => {
       while (queue.length > 0) {
         const currentBatch = queue.splice(0, concurrencyLimit);
-        const batchPromises = currentBatch.map(async (repo) => {
-          try {
-            const languagesResponse = await fetch(repo.languages_url, {
-              headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
-                'Accept': 'application/vnd.github.v3+json',
-              },
-            });
-
-            const languagesRateLimit = extractRateLimit(languagesResponse.headers);
-            console.log(`Languages Rate Limit for ${repo.name}:`, languagesRateLimit);
-
-            let languagesData;
-            if (languagesResponse.ok) {
-              languagesData = await languagesResponse.json();
-              console.log(`Fetched Languages for ${repo.name}:`, languagesData);
-            } else {
-              const errorData = await languagesResponse.json().catch(() => null);
-              const errorMessage = errorData?.message || `Failed to fetch languages for repo "${repo.name}".`;
-              console.error(`Error fetching languages for repo "${repo.name}":`, errorMessage);
-              throw new Error(errorMessage);
-            }
-
-            return { ...repo, languages: languagesData };
-          } catch (langError) {
-            console.error(langError);
-            return { ...repo, languages: {} }; // Fallback to empty languages
-          }
-        });
-
-        const results = await Promise.all(batchPromises);
-        reposWithLanguages.push(...results);
+        const batchPromises = currentBatch.map((repo) => processRepoLanguages(repo));
+        const batchResults = await Promise.all(batchPromises);
+        reposWithLanguages.push(...batchResults);
       }
     };
 
