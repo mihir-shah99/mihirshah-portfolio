@@ -5,86 +5,91 @@ import threatIcon from '../assets/images/threat.jpg';
 import architectureIcon from '../assets/images/architecture.jpg';
 import complianceIcon from '../assets/images/compliance.jpg';
 
+// Citation logos (replace with actual image assets)
+import bookAuthorityLogo from '../assets/images/bookAuthorityLogo.png';
+import cyberSkillsLogo from '../assets/images/cyberSkillsLogo.jpeg';
+import tariMoeLogo from '../assets/images/tariMoeLogo.png';
+import vikoLibraryLogo from '../assets/images/vikoLibraryLogo.png';
+
 const BookPage = () => {
   // Canvas Animation Logic
-useEffect(() => {
-  const canvas = document.getElementById('dotsCanvas');
-  const ctx = canvas.getContext('2d');
-  let width = canvas.width = window.innerWidth;
-  let height = canvas.height = window.innerHeight;
+  useEffect(() => {
+    const canvas = document.getElementById('dotsCanvas');
+    const ctx = canvas.getContext('2d');
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
 
-  let particleCount = window.innerWidth < 640 ? 50 : 100; // Fewer particles on mobile
-  let particles = [];
+    let particleCount = window.innerWidth < 640 ? 50 : 100;
+    let particles = [];
 
-  window.addEventListener('resize', () => {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
-    particleCount = window.innerWidth < 640 ? 50 : 100; // Update particle count on resize
-    particles = [];
-    createParticles(); // Re-create particles on resize
-  });
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      particleCount = window.innerWidth < 640 ? 50 : 100;
+      particles = [];
+      createParticles();
+    });
 
-  class Particle {
-    constructor() {
-      this.x = Math.random() * width;
-      this.y = Math.random() * height;
-      this.vx = Math.random() * 0.5 - 0.25;
-      this.vy = Math.random() * 0.5 - 0.25;
-      this.radius = window.innerWidth < 640 ? 1 : 2; // Smaller particles on mobile
+    class Particle {
+      constructor() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = Math.random() * 0.5 - 0.25;
+        this.vy = Math.random() * 0.5 - 0.25;
+        this.radius = window.innerWidth < 640 ? 1 : 2;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x < 0 || this.x > width) this.vx = -this.vx;
+        if (this.y < 0 || this.y > height) this.vy = -this.vy;
+      }
     }
 
-    draw() {
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
+    function createParticles() {
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+      }
     }
 
-    update() {
-      this.x += this.vx;
-      this.y += this.vy;
-
-      if (this.x < 0 || this.x > width) this.vx = -this.vx;
-      if (this.y < 0 || this.y > height) this.vy = -this.vy;
-    }
-  }
-
-  function createParticles() {
-    for (let i = 0; i < particleCount; i++) {
-      particles.push(new Particle());
-    }
-  }
-
-  function drawLines() {
-    let maxDist = 100;
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        let dist = Math.hypot(particles[i].x - particles[j].x, particles[i].y - particles[j].y);
-        if (dist < maxDist) {
-          ctx.beginPath();
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(255, 255, 255, ${1 - dist / maxDist})`;
-          ctx.stroke();
+    function drawLines() {
+      let maxDist = 100;
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          let dist = Math.hypot(particles[i].x - particles[j].x, particles[i].y - particles[j].y);
+          if (dist < maxDist) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - dist / maxDist})`;
+            ctx.stroke();
+          }
         }
       }
     }
-  }
 
-  function animate() {
-    ctx.clearRect(0, 0, width, height);
-    for (let particle of particles) {
-      particle.update();
-      particle.draw();
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+      for (let particle of particles) {
+        particle.update();
+        particle.draw();
+      }
+      drawLines();
+      requestAnimationFrame(animate);
     }
-    drawLines();
-    requestAnimationFrame(animate);
-  }
 
-  createParticles();
-  animate();
-}, []);
-
+    createParticles();
+    animate();
+  }, []);
 
   const highlights = [
     {
@@ -104,9 +109,32 @@ useEffect(() => {
     },
   ];
 
+  const citations = [
+    {
+      title: 'Book Authority Awards',
+      link: 'https://bookauthority.org/books/best-selling-software-security-books',
+      logo: bookAuthorityLogo,
+    },
+    {
+      title: 'Cloud Native Security Book (Tari Moe)',
+      link: 'https://tari.moe/2024/cloud-native-security-book.html',
+      logo: tariMoeLogo,
+    },
+    {
+      title: 'University of Lithuania',
+      link: 'https://biblioteka.viko.lt/media/uploads/sites/25/2023/12/EIF-2024-m.-sausis.pdf',
+      logo: vikoLibraryLogo,
+    },
+    {
+      title: 'University of Ireland',
+      link: 'https://cyberskills.ie/media/Module-Cloud-Security-ArchitectingDescriptor_Final.pdf',
+      logo: cyberSkillsLogo,
+    },
+  ];
+
   return (
     <section className="min-h-screen bg-dark-blue relative text-white">
-      <canvas id="dotsCanvas" className="absolute top-0 left-0 w-full h-full z-0"></canvas>
+      <canvas id="dotsCanvas" className="absolute top-0 left-0 w-full h-full z-10"></canvas>
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-4">
         <motion.img
           src={bookCover}
@@ -145,7 +173,37 @@ useEffect(() => {
         </div>
       </section>
 
-      {/* Sliding Reviews */}
+        {/* Citations & Mentions Section */}
+        <section className="py-16 sm:py-20 bg-gray-100 relative z-20">  {/* Ensure this section is above the canvas */}
+          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-gray-900">Citations & Mentions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 px-4">
+            {citations.map((citation, index) => (
+              <motion.a
+                key={index}
+                href={citation.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-lg transform transition-transform hover:scale-105 cursor-pointer z-30"
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.2 }}
+                style={{ zIndex: 30, pointerEvents: 'auto' }}
+              >
+                <img 
+                  src={citation.logo} 
+                  alt={citation.title} 
+                  className="w-24 h-24 mb-4 transition-transform duration-300 ease-in-out hover:scale-110"
+                />
+                <p className="text-center text-lg font-semibold text-gray-900 hover:text-blue-600">
+                  {citation.title}
+                </p>
+              </motion.a>
+            ))}
+          </div>
+        </section>
+
+      {/* What Readers Are Saying */}
       <div className="py-12 sm:py-20 bg-gray-50">
         <h2 className="text-3xl sm:text-4xl font-bold mb-12 text-gray-900 text-center">What Readers Are Saying</h2>
         <div className="relative overflow-hidden">
