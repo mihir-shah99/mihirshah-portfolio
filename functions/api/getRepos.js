@@ -1,22 +1,21 @@
-// functions/getRepos.js
+// functions/api/getRepos.js
 
 /**
  * Cloudflare Pages Function to fetch GitHub profile stats and repositories.
  * 
- * @param {Request} request - The incoming request object.
- * @param {Object} context - The context object containing environment variables.
+ * @param {object} context - The context object containing request and environment variables.
  * @returns {Response} - The response containing profile stats and repositories.
  */
-export async function onRequestGet(context) {
+export async function onRequestGet({ request, env }) {
   // Set CORS headers
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*', // Replace '*' with your frontend's origin in production for enhanced security
+    'Access-Control-Allow-Origin': 'https://mihirshah.tech', // Replace '*' with your frontend's origin in production for enhanced security
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 
   // Handle preflight OPTIONS request
-  if (context.request.method === 'OPTIONS') {
+  if (request.method === 'OPTIONS') {
     return new Response(null, {
       headers: corsHeaders,
       status: 204,
@@ -24,7 +23,10 @@ export async function onRequestGet(context) {
   }
 
   try {
-    const GITHUB_TOKEN = context.env.GITHUB_TOKEN;
+    const GITHUB_TOKEN = env.GITHUB_TOKEN;
+
+    // Logging to verify if GITHUB_TOKEN is accessible
+    console.log('GITHUB_TOKEN:', GITHUB_TOKEN ? 'Set' : 'Not Set');
 
     if (!GITHUB_TOKEN) {
       return new Response(JSON.stringify({ message: 'GitHub token not configured.' }), {
@@ -33,8 +35,8 @@ export async function onRequestGet(context) {
       });
     }
 
-    // Function to update rate limit information
-    const updateRateLimit = (headers) => {
+    // Function to extract rate limit information
+    const extractRateLimit = (headers) => {
       const limit = parseInt(headers.get('X-RateLimit-Limit'), 10) || null;
       const remaining = parseInt(headers.get('X-RateLimit-Remaining'), 10) || null;
       const reset = parseInt(headers.get('X-RateLimit-Reset'), 10) * 1000 || null; // Convert to milliseconds
@@ -49,7 +51,7 @@ export async function onRequestGet(context) {
       },
     });
 
-    const profileRateLimit = updateRateLimit(profileResponse.headers);
+    const profileRateLimit = extractRateLimit(profileResponse.headers);
 
     if (!profileResponse.ok) {
       const errorData = await profileResponse.json();
@@ -59,7 +61,7 @@ export async function onRequestGet(context) {
     const profileData = await profileResponse.json();
 
     // Fetch repositories with pagination
-    const url = new URL(context.request.url);
+    const url = new URL(request.url);
     const page = url.searchParams.get('page') || '1';
     const perPage = url.searchParams.get('perPage') || '20';
 
@@ -70,7 +72,7 @@ export async function onRequestGet(context) {
       },
     });
 
-    const reposRateLimit = updateRateLimit(reposResponse.headers);
+    const reposRateLimit = extractRateLimit(reposResponse.headers);
 
     if (!reposResponse.ok) {
       const errorData = await reposResponse.json();
@@ -90,7 +92,7 @@ export async function onRequestGet(context) {
             },
           });
 
-          const languagesRateLimit = updateRateLimit(languagesResponse.headers);
+          const languagesRateLimit = extractRateLimit(languagesResponse.headers);
 
           if (!languagesResponse.ok) {
             const langErrorData = await languagesResponse.json();
