@@ -10,6 +10,7 @@ import bookAuthorityLogo from '../assets/images/bookAuthorityLogo.png';
 import cyberSkillsLogo from '../assets/images/cyberSkillsLogo.jpeg';
 import tariMoeLogo from '../assets/images/tariMoeLogo.png';
 import vikoLibraryLogo from '../assets/images/vikoLibraryLogo.png';
+import cloudLogo from '../assets/images/cloud.png';
 
 const BookPage = () => {
   // Canvas Animation Logic
@@ -130,6 +131,11 @@ const BookPage = () => {
       link: 'https://cyberskills.ie/media/Module-Cloud-Security-ArchitectingDescriptor_Final.pdf',
       logo: cyberSkillsLogo,
     },
+    {
+      title: 'Cloud Marathon Runner',
+      link: 'https://thecloudmarathoner.com/index.php/2023/10/08/book-review-what-you-need-to-know-about-cloud-native-software-%f0%9f%94%90-security-handbook-%e2%81%89-%f0%9f%a4%94/',
+      logo: cloudLogo,
+    },
   ];
 
   return (
@@ -240,12 +246,13 @@ const BookPage = () => {
       </div>
 
       {/* Final CTA Section */}
-      <div className="py-12 sm:py-16 bg-blue-800 text-center">
+      <div className="py-12 sm:py-16 bg-blue-800 text-center relative z-50">
         <motion.a
           href="https://a.co/d/d8yL6wR"
           target="_blank"
           rel="noopener noreferrer"
           className="bg-white text-blue-800 font-bold py-3 sm:py-4 px-6 sm:px-10 rounded-full shadow-lg hover:shadow-xl transition-all"
+          style={{ pointerEvents: 'auto' }} // Ensure pointer events are active
         >
           Get Your Copy Now &rarr;
         </motion.a>
