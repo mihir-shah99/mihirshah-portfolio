@@ -179,35 +179,35 @@ const BookPage = () => {
         </div>
       </section>
 
-        {/* Citations & Mentions Section */}
-        <section className="py-16 sm:py-20 bg-gray-100 relative z-20">  {/* Ensure this section is above the canvas */}
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-gray-900">Citations & Mentions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 px-4">
-            {citations.map((citation, index) => (
-              <motion.a
-                key={index}
-                href={citation.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-lg transform transition-transform hover:scale-105 cursor-pointer z-30"
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.2 }}
-                style={{ zIndex: 30, pointerEvents: 'auto' }}
-              >
-                <img 
-                  src={citation.logo} 
-                  alt={citation.title} 
-                  className="w-24 h-24 mb-4 transition-transform duration-300 ease-in-out hover:scale-110"
-                />
-                <p className="text-center text-lg font-semibold text-gray-900 hover:text-blue-600">
-                  {citation.title}
-                </p>
-              </motion.a>
-            ))}
-          </div>
-        </section>
+ {/* Citations & Mentions Section */}
+<section className="py-16 sm:py-20 bg-gradient-to-br from-gray-100 to-white relative z-20">
+  <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-gray-900">Citations & Mentions</h2>
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 px-4">
+    {citations.map((citation, index) => (
+      <motion.a
+        key={index}
+        href={citation.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="p-6 bg-white rounded-lg shadow-lg hover:shadow-2xl transform transition-transform hover:scale-105 relative overflow-hidden cursor-pointer z-30"
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: index * 0.2 }}
+      >
+        <motion.div 
+          className="absolute inset-0 bg-gradient-to-t from-blue-500 to-transparent opacity-0 hover:opacity-100 transition-all duration-500"
+        />
+        <img
+          src={citation.logo}
+          alt={citation.title}
+          className="w-24 h-24 mb-4 mx-auto transition-transform duration-300 ease-in-out hover:scale-110"
+        />
+        <h3 className="text-lg font-semibold text-center text-gray-900 mb-2 hover:text-blue-600">{citation.title}</h3>
+      </motion.a>
+    ))}
+  </div>
+</section>
+
 
       {/* What Readers Are Saying */}
       <div className="py-12 sm:py-20 bg-gray-50">
