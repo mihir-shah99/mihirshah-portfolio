@@ -7,15 +7,19 @@
  * @returns {Response} - The response containing profile stats and repositories.
  */
 export async function onRequestGet({ request, env }) {
+  console.log('Worker invoked');
+  console.log('Request Method:', request.method);
+
   // Set CORS headers
   const corsHeaders = {
-    'Access-Control-Allow-Origin': 'https://mihirshah.tech', // Replace '*' with your frontend's origin in production for enhanced security
+    'Access-Control-Allow-Origin': '*', // Replace '*' with your frontend's origin in production for enhanced security
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 
   // Handle preflight OPTIONS request
   if (request.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request');
     return new Response(null, {
       headers: corsHeaders,
       status: 204,
@@ -29,6 +33,7 @@ export async function onRequestGet({ request, env }) {
     console.log('GITHUB_TOKEN:', GITHUB_TOKEN ? 'Set' : 'Not Set');
 
     if (!GITHUB_TOKEN) {
+      console.error('GITHUB_TOKEN is not set');
       return new Response(JSON.stringify({ message: 'GitHub token not configured.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -44,6 +49,7 @@ export async function onRequestGet({ request, env }) {
     };
 
     // Fetch user profile
+    console.log('Fetching user profile');
     const profileResponse = await fetch('https://api.github.com/user', {
       headers: {
         'Authorization': `token ${GITHUB_TOKEN}`,
@@ -52,19 +58,39 @@ export async function onRequestGet({ request, env }) {
     });
 
     const profileRateLimit = extractRateLimit(profileResponse.headers);
+    console.log('Profile Rate Limit:', profileRateLimit);
 
     if (!profileResponse.ok) {
-      const errorData = await profileResponse.json();
+      // Attempt to parse error message
+      let errorData;
+      try {
+        errorData = await profileResponse.json();
+      } catch (jsonError) {
+        const responseText = await profileResponse.text();
+        console.error('Failed to parse profile error response as JSON:', responseText);
+        throw new Error(`Failed to fetch user profile: ${profileResponse.statusText}`);
+      }
+      console.error('Error fetching user profile:', errorData.message);
       throw new Error(`Failed to fetch user profile: ${errorData.message}`);
     }
 
-    const profileData = await profileResponse.json();
+    // Attempt to parse profile JSON
+    let profileData;
+    try {
+      profileData = await profileResponse.json();
+      console.log('Fetched Profile Data:', profileData);
+    } catch (jsonError) {
+      const responseText = await profileResponse.text();
+      console.error('Failed to parse profile response as JSON:', responseText);
+      throw new Error(`Invalid JSON in profile response: ${jsonError.message}`);
+    }
 
     // Fetch repositories with pagination
     const url = new URL(request.url);
     const page = url.searchParams.get('page') || '1';
     const perPage = url.searchParams.get('perPage') || '20';
 
+    console.log(`Fetching repositories: page=${page}, perPage=${perPage}`);
     const reposResponse = await fetch(`https://api.github.com/user/repos?visibility=public&affiliation=owner&per_page=${perPage}&page=${page}`, {
       headers: {
         'Authorization': `token ${GITHUB_TOKEN}`,
@@ -73,15 +99,35 @@ export async function onRequestGet({ request, env }) {
     });
 
     const reposRateLimit = extractRateLimit(reposResponse.headers);
+    console.log('Repositories Rate Limit:', reposRateLimit);
 
     if (!reposResponse.ok) {
-      const errorData = await reposResponse.json();
+      // Attempt to parse error message
+      let errorData;
+      try {
+        errorData = await reposResponse.json();
+      } catch (jsonError) {
+        const responseText = await reposResponse.text();
+        console.error('Failed to parse repositories error response as JSON:', responseText);
+        throw new Error(`Failed to fetch repositories: ${reposResponse.statusText}`);
+      }
+      console.error('Error fetching repositories:', errorData.message);
       throw new Error(`Failed to fetch repositories: ${errorData.message}`);
     }
 
-    const reposData = await reposResponse.json();
+    // Attempt to parse repos JSON
+    let reposData;
+    try {
+      reposData = await reposResponse.json();
+      console.log('Fetched Repositories:', reposData);
+    } catch (jsonError) {
+      const responseText = await reposResponse.text();
+      console.error('Failed to parse repositories response as JSON:', responseText);
+      throw new Error(`Invalid JSON in repositories response: ${jsonError.message}`);
+    }
 
     // Fetch languages for each repository in parallel
+    console.log('Fetching languages for each repository');
     const reposWithLanguages = await Promise.all(
       reposData.map(async (repo) => {
         try {
@@ -93,13 +139,33 @@ export async function onRequestGet({ request, env }) {
           });
 
           const languagesRateLimit = extractRateLimit(languagesResponse.headers);
+          console.log(`Languages Rate Limit for ${repo.name}:`, languagesRateLimit);
 
           if (!languagesResponse.ok) {
-            const langErrorData = await languagesResponse.json();
+            // Attempt to parse error message
+            let langErrorData;
+            try {
+              langErrorData = await languagesResponse.json();
+            } catch (jsonError) {
+              const responseText = await languagesResponse.text();
+              console.error(`Failed to parse languages error response for repo "${repo.name}" as JSON:`, responseText);
+              throw new Error(`Failed to fetch languages for repo "${repo.name}": ${languagesResponse.statusText}`);
+            }
+            console.error(`Error fetching languages for repo "${repo.name}":`, langErrorData.message);
             throw new Error(`Failed to fetch languages for repo "${repo.name}": ${langErrorData.message}`);
           }
 
-          const languagesData = await languagesResponse.json();
+          // Attempt to parse languages JSON
+          let languagesData;
+          try {
+            languagesData = await languagesResponse.json();
+            console.log(`Fetched Languages for ${repo.name}:`, languagesData);
+          } catch (jsonError) {
+            const responseText = await languagesResponse.text();
+            console.error(`Failed to parse languages response for repo "${repo.name}" as JSON:`, responseText);
+            throw new Error(`Invalid JSON in languages response for repo "${repo.name}": ${jsonError.message}`);
+          }
+
           return { ...repo, languages: languagesData };
         } catch (langError) {
           console.error(langError);
@@ -110,6 +176,7 @@ export async function onRequestGet({ request, env }) {
 
     // Calculate totalStars as the sum of stargazers_count of fetched repos
     const totalStars = reposWithLanguages.reduce((acc, repo) => acc + (repo.stargazers_count || 0), 0);
+    console.log('Total Stars:', totalStars);
 
     // Prepare profileStats
     const profileStats = {
@@ -128,6 +195,8 @@ export async function onRequestGet({ request, env }) {
         reset: reposRateLimit.reset || profileRateLimit.reset,
       },
     };
+
+    console.log('Response Data:', responseData);
 
     return new Response(JSON.stringify(responseData), {
       status: 200,
