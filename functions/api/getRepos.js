@@ -61,17 +61,18 @@ export async function onRequestGet({ request, env }) {
     console.log('Profile Rate Limit:', profileRateLimit);
 
     if (!profileResponse.ok) {
-      // Attempt to parse error message
+      // Clone the response to read it as text without affecting the original response
+      const clonedProfileResponse = profileResponse.clone();
       let errorData;
       try {
-        errorData = await profileResponse.json();
+        errorData = await clonedProfileResponse.json();
+        console.error('Error fetching user profile:', errorData.message);
+        throw new Error(`Failed to fetch user profile: ${errorData.message}`);
       } catch (jsonError) {
-        const responseText = await profileResponse.text();
+        const responseText = await clonedProfileResponse.text();
         console.error('Failed to parse profile error response as JSON:', responseText);
         throw new Error(`Failed to fetch user profile: ${profileResponse.statusText}`);
       }
-      console.error('Error fetching user profile:', errorData.message);
-      throw new Error(`Failed to fetch user profile: ${errorData.message}`);
     }
 
     // Attempt to parse profile JSON
@@ -102,17 +103,18 @@ export async function onRequestGet({ request, env }) {
     console.log('Repositories Rate Limit:', reposRateLimit);
 
     if (!reposResponse.ok) {
-      // Attempt to parse error message
+      // Clone the response to read it as text without affecting the original response
+      const clonedReposResponse = reposResponse.clone();
       let errorData;
       try {
-        errorData = await reposResponse.json();
+        errorData = await clonedReposResponse.json();
+        console.error('Error fetching repositories:', errorData.message);
+        throw new Error(`Failed to fetch repositories: ${errorData.message}`);
       } catch (jsonError) {
-        const responseText = await reposResponse.text();
+        const responseText = await clonedReposResponse.text();
         console.error('Failed to parse repositories error response as JSON:', responseText);
         throw new Error(`Failed to fetch repositories: ${reposResponse.statusText}`);
       }
-      console.error('Error fetching repositories:', errorData.message);
-      throw new Error(`Failed to fetch repositories: ${errorData.message}`);
     }
 
     // Attempt to parse repos JSON
@@ -142,17 +144,18 @@ export async function onRequestGet({ request, env }) {
           console.log(`Languages Rate Limit for ${repo.name}:`, languagesRateLimit);
 
           if (!languagesResponse.ok) {
-            // Attempt to parse error message
+            // Clone the response to read it as text without affecting the original response
+            const clonedLanguagesResponse = languagesResponse.clone();
             let langErrorData;
             try {
-              langErrorData = await languagesResponse.json();
+              langErrorData = await clonedLanguagesResponse.json();
+              console.error(`Error fetching languages for repo "${repo.name}":`, langErrorData.message);
+              throw new Error(`Failed to fetch languages for repo "${repo.name}": ${langErrorData.message}`);
             } catch (jsonError) {
-              const responseText = await languagesResponse.text();
+              const responseText = await clonedLanguagesResponse.text();
               console.error(`Failed to parse languages error response for repo "${repo.name}" as JSON:`, responseText);
               throw new Error(`Failed to fetch languages for repo "${repo.name}": ${languagesResponse.statusText}`);
             }
-            console.error(`Error fetching languages for repo "${repo.name}":`, langErrorData.message);
-            throw new Error(`Failed to fetch languages for repo "${repo.name}": ${langErrorData.message}`);
           }
 
           // Attempt to parse languages JSON
