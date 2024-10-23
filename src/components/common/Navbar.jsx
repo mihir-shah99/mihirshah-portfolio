@@ -38,6 +38,9 @@ const Navbar = () => {
           <NavLink to="/skills" className={navLinkClass}>
             Skills
           </NavLink>
+          <NavLink to="/achievements" className={navLinkClass}>
+            Achievements
+          </NavLink>
           <NavLink to="/blog" className={navLinkClass}>
             Blog
           </NavLink>
@@ -94,6 +97,13 @@ const Navbar = () => {
             onClick={toggleMenu}
           >
             Skills
+          </NavLink>
+          <NavLink
+            to="/achievements"
+            className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+            onClick={toggleMenu}
+          >
+            Achievements
           </NavLink>
           <NavLink
             to="/blog"
