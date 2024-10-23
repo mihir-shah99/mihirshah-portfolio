@@ -1,7 +1,7 @@
 // src/pages/ProjectsPage.jsx
 
 import React, { useEffect, useState, useMemo, useCallback, useRef, Suspense } from 'react';
-import Slider from 'react-slick'; // Import the carousel slider
+import Slider from 'react-slick'; // Carousel slider
 import {
   FaStar,
   FaCodeBranch,
@@ -11,7 +11,7 @@ import {
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 // Lazy load the ProjectCard component
-const ProjectCard = React.lazy(() => import('../components/ProjectCard')); // Adjust the path as necessary
+const ProjectCard = React.lazy(() => import('../components/ProjectCard'));
 
 // Import CSS for react-slick
 import 'slick-carousel/slick/slick.css';

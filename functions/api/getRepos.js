@@ -12,7 +12,7 @@ export async function onRequestGet({ request, env }) {
 
   // Set CORS headers
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*', // Replace '*' with your frontend's origin in production for enhanced security
+    'Access-Control-Allow-Origin': 'https://mihirshah.tech', // Replace '*' with your frontend's origin in production for enhanced security
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
@@ -128,54 +128,67 @@ export async function onRequestGet({ request, env }) {
       throw new Error(`Invalid JSON in repositories response: ${jsonError.message}`);
     }
 
-    // Fetch languages for each repository in parallel
+    // Fetch languages for each repository in parallel with limited concurrency
     console.log('Fetching languages for each repository');
-    const reposWithLanguages = await Promise.all(
-      reposData.map(async (repo) => {
-        try {
-          const languagesResponse = await fetch(repo.languages_url, {
-            headers: {
-              'Authorization': `token ${GITHUB_TOKEN}`,
-              'Accept': 'application/vnd.github.v3+json',
-            },
-          });
+    const concurrencyLimit = 5; // Adjust based on rate limits and performance
+    const reposWithLanguages = [];
+    const queue = [...reposData]; // Clone the array to prevent mutation
 
-          const languagesRateLimit = extractRateLimit(languagesResponse.headers);
-          console.log(`Languages Rate Limit for ${repo.name}:`, languagesRateLimit);
-
-          if (!languagesResponse.ok) {
-            // Clone the response to read it as text without affecting the original response
-            const clonedLanguagesResponse = languagesResponse.clone();
-            let langErrorData;
-            try {
-              langErrorData = await clonedLanguagesResponse.json();
-              console.error(`Error fetching languages for repo "${repo.name}":`, langErrorData.message);
-              throw new Error(`Failed to fetch languages for repo "${repo.name}": ${langErrorData.message}`);
-            } catch (jsonError) {
-              const responseText = await clonedLanguagesResponse.text();
-              console.error(`Failed to parse languages error response for repo "${repo.name}" as JSON:`, responseText);
-              throw new Error(`Failed to fetch languages for repo "${repo.name}": ${languagesResponse.statusText}`);
-            }
-          }
-
-          // Attempt to parse languages JSON
-          let languagesData;
+    // Helper function to process the queue with limited concurrency
+    const processQueue = async () => {
+      while (queue.length > 0) {
+        const currentBatch = queue.splice(0, concurrencyLimit);
+        const batchPromises = currentBatch.map(async (repo) => {
           try {
-            languagesData = await languagesResponse.json();
-            console.log(`Fetched Languages for ${repo.name}:`, languagesData);
-          } catch (jsonError) {
-            const responseText = await languagesResponse.text();
-            console.error(`Failed to parse languages response for repo "${repo.name}" as JSON:`, responseText);
-            throw new Error(`Invalid JSON in languages response for repo "${repo.name}": ${jsonError.message}`);
-          }
+            const languagesResponse = await fetch(repo.languages_url, {
+              headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json',
+              },
+            });
 
-          return { ...repo, languages: languagesData };
-        } catch (langError) {
-          console.error(langError);
-          return { ...repo, languages: {} }; // Fallback to empty languages
-        }
-      })
-    );
+            const languagesRateLimit = extractRateLimit(languagesResponse.headers);
+            console.log(`Languages Rate Limit for ${repo.name}:`, languagesRateLimit);
+
+            if (!languagesResponse.ok) {
+              // Clone the response to read it as text without affecting the original response
+              const clonedLanguagesResponse = languagesResponse.clone();
+              let langErrorData;
+              try {
+                langErrorData = await clonedLanguagesResponse.json();
+                console.error(`Error fetching languages for repo "${repo.name}":`, langErrorData.message);
+                throw new Error(`Failed to fetch languages for repo "${repo.name}": ${langErrorData.message}`);
+              } catch (jsonError) {
+                const responseText = await clonedLanguagesResponse.text();
+                console.error(`Failed to parse languages error response for repo "${repo.name}" as JSON:`, responseText);
+                throw new Error(`Failed to fetch languages for repo "${repo.name}": ${languagesResponse.statusText}`);
+              }
+            }
+
+            // Attempt to parse languages JSON
+            let languagesData;
+            try {
+              languagesData = await languagesResponse.json();
+              console.log(`Fetched Languages for ${repo.name}:`, languagesData);
+            } catch (jsonError) {
+              const responseText = await languagesResponse.text();
+              console.error(`Failed to parse languages response for repo "${repo.name}" as JSON:`, responseText);
+              throw new Error(`Invalid JSON in languages response for repo "${repo.name}": ${jsonError.message}`);
+            }
+
+            return { ...repo, languages: languagesData };
+          } catch (langError) {
+            console.error(langError);
+            return { ...repo, languages: {} }; // Fallback to empty languages
+          }
+        });
+
+        const results = await Promise.all(batchPromises);
+        reposWithLanguages.push(...results);
+      }
+    };
+
+    await processQueue();
 
     // Calculate totalStars as the sum of stargazers_count of fetched repos
     const totalStars = reposWithLanguages.reduce((acc, repo) => acc + (repo.stargazers_count || 0), 0);
