@@ -41,6 +41,9 @@ const Navbar = () => {
           <NavLink to="/blog" className={navLinkClass}>
             Blog
           </NavLink>
+          <NavLink to="/testimonials" className={navLinkClass}>
+            Testimonials
+          </NavLink>
           <NavLink to="/contact" className={navLinkClass}>
             Contact
           </NavLink>
@@ -98,6 +101,13 @@ const Navbar = () => {
             onClick={toggleMenu}
           >
             Blog
+          </NavLink>
+          <NavLink
+            to="/testimonials"
+            className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+            onClick={toggleMenu}
+          >
+            Testimonials
           </NavLink>
           <NavLink
             to="/contact"
