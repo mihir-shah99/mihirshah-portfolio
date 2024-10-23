@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Button from '../common/Button';
+import { motion } from 'framer-motion'; // For smooth animations
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({
@@ -81,14 +81,30 @@ const ContactForm = () => {
             required
           ></textarea>
         </div>
+
+        {/* Animated Button */}
         <div className="text-center">
-          <Button type="submit" variant="primary" className="w-full sm:w-auto">
+          <motion.button
+            type="submit"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={`w-full sm:w-auto py-2 px-6 rounded-lg text-white font-semibold transition-all duration-300 ${
+              status === 'Sending...' ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+            disabled={status === 'Sending...'}
+          >
             {status ? status : 'Send Message'}
-          </Button>
+          </motion.button>
         </div>
       </form>
+
+      {/* Display status message below the form */}
       {status && (
-        <p className="mt-4 text-center text-sm text-gray-600">{status}</p>
+        <p className={`mt-4 text-center text-sm ${
+          status.includes('success') ? 'text-green-600' : 'text-red-600'
+        }`}>
+          {status}
+        </p>
       )}
     </div>
   );
