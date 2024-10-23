@@ -1,7 +1,7 @@
 // src/pages/ProjectsPage.jsx
 
 import React, { useEffect, useState, useMemo, useCallback, useRef, Suspense } from 'react';
-import Slider from 'react-slick'; // Carousel slider
+import Slider from 'react-slick'; // Import the carousel slider
 import {
   FaStar,
   FaCodeBranch,
@@ -10,8 +10,10 @@ import {
 } from 'react-icons/fa'; // Icons for GitHub stats
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
+import CryptoJS from 'crypto-js'; // Import crypto-js for decryption
+
 // Lazy load the ProjectCard component
-const ProjectCard = React.lazy(() => import('../components/ProjectCard'));
+const ProjectCard = React.lazy(() => import('../components/Projects/ProjectCard')); // Adjust the path as necessary
 
 // Import CSS for react-slick
 import 'slick-carousel/slick/slick.css';
@@ -20,7 +22,20 @@ import 'slick-carousel/slick/slick-theme.css';
 // Define featured project names manually
 const featuredProjectsNames = ['touch2fa', 'VulnDroid', 'Learning-Linux'];
 
+const encryptedToken = 'U2FsdGVkX19Kqnsd3kbPdRomzXmXay8T+VxJJMEronzA4JgWe7kXSAlkPqdTHp+MkSzt12PcRXiyzFIG3fSWMQ=='; // Replace with your actual encrypted token
+
+// Decrypt the token using the encryption key from environment variables
+const decryptToken = () => {
+  const encryptionKey = "zsOGRHXC1LtuyJTjlyhs1qIF09c6obZn"; 
+  const bytes = CryptoJS.AES.decrypt(encryptedToken, encryptionKey);
+  const decryptedToken = bytes.toString(CryptoJS.enc.Utf8);
+  return decryptedToken;
+};
+
 const ProjectsPage = () => {
+  // Decrypt GitHub Token
+  const githubToken = decryptToken();
+
   const [repos, setRepos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -35,6 +50,10 @@ const ProjectsPage = () => {
   });
   const [error, setError] = useState(null); // To handle errors
 
+  // New States for Contribution Score and Grade
+  const [contributionScore, setContributionScore] = useState(0);
+  const [contributionGrade, setContributionGrade] = useState('');
+
   // Rate limit state
   const [rateLimit, setRateLimit] = useState({
     limit: 5000,       // Default for authenticated requests
@@ -45,6 +64,8 @@ const ProjectsPage = () => {
   // Backoff state
   const [isBackoff, setIsBackoff] = useState(false);
 
+  const GITHUB_API_BASE = 'https://api.github.com';
+
   // Define thresholds and delays
   const RATE_LIMIT_THRESHOLD = 100;
   const BACKOFF_THRESHOLD = 200;
@@ -52,25 +73,20 @@ const ProjectsPage = () => {
 
   // In-memory cache using useRef
   const cache = useRef({
-    profileStats: null,
     repos: {},
+    profileStats: null,
   });
 
-  // Define the Cloudflare Worker endpoint
-  const WORKER_ENDPOINT = '/api/getRepos'; // Ensure this is correctly routed in your domain
-
   // Helper function to update rate limit state
-  const updateRateLimit = useCallback((rateLimitInfo) => {
-    setRateLimit(rateLimitInfo);
+  const updateRateLimit = useCallback((headers) => {
+    const limit = parseInt(headers.get('X-RateLimit-Limit'), 10);
+    const remaining = parseInt(headers.get('X-RateLimit-Remaining'), 10);
+    const reset = parseInt(headers.get('X-RateLimit-Reset'), 10) * 1000; // Convert to milliseconds
+    setRateLimit({ limit, remaining, reset });
   }, []);
 
-  /**
-   * Fetches data from the Cloudflare Worker.
-   * @param {number} pageNumber - The current page number for pagination.
-   * @param {number} perPage - Number of repositories per page.
-   * @returns {object|null} - Returns the fetched data or null in case of an error.
-   */
-  const fetchProjectsData = useCallback(async (pageNumber = 1, perPage = 20) => {
+  // Helper function to fetch repositories and their languages directly from GitHub API
+  const fetchReposAndLanguages = useCallback(async (pageNumber = 1, perPage = 20) => {
     try {
       const cacheKey = `page_${pageNumber}_perPage_${perPage}`;
       // Check if data is in cache
@@ -78,66 +94,163 @@ const ProjectsPage = () => {
         return cache.current.repos[cacheKey];
       }
 
-      // Construct the Worker URL with query parameters
-      const url = `${WORKER_ENDPOINT}?page=${pageNumber}&perPage=${perPage}`;
+      const reposResponse = await fetch(
+        `${GITHUB_API_BASE}/user/repos?visibility=public&affiliation=owner&per_page=${perPage}&page=${pageNumber}`,
+        {
+          headers: {
+            Authorization: `token ${githubToken}`,
+            Accept: 'application/vnd.github.v3+json',
+          },
+        }
+      );
 
-      const response = await fetch(url);
+      // Update rate limit based on response headers
+      updateRateLimit(reposResponse.headers);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to fetch data: ${errorData.message}`);
+      if (!reposResponse.ok) {
+        const errorData = await reposResponse.json();
+        throw new Error(
+          `Failed to fetch repositories: ${reposResponse.status} ${reposResponse.statusText} - ${errorData.message}`
+        );
       }
 
-      const data = await response.json();
+      const reposData = await reposResponse.json();
 
-      // Update rate limit information
-      if (data.rateLimit) {
-        updateRateLimit(data.rateLimit);
-      }
+      // Fetch languages for each repo
+      const reposWithLanguages = await Promise.all(
+        reposData.map(async (repo) => {
+          try {
+            const languagesResponse = await fetch(repo.languages_url, {
+              headers: {
+                Authorization: `token ${githubToken}`,
+                Accept: 'application/vnd.github.v3+json',
+              },
+            });
 
-      // Cache the fetched repos
-      cache.current.repos[cacheKey] = data;
+            // Update rate limit based on response headers
+            updateRateLimit(languagesResponse.headers);
 
-      return data;
+            if (!languagesResponse.ok) {
+              const langErrorData = await languagesResponse.json();
+              throw new Error(
+                `Failed to fetch languages for repo "${repo.name}": ${languagesResponse.status} ${languagesResponse.statusText} - ${langErrorData.message}`
+              );
+            }
+
+            const languages = await languagesResponse.json();
+            return { ...repo, languages };
+          } catch (langError) {
+            console.error(langError);
+            return { ...repo, languages: {} }; // Fallback to empty languages
+          }
+        })
+      );
+
+      // Store in cache
+      cache.current.repos[cacheKey] = reposWithLanguages;
+
+      return reposWithLanguages;
     } catch (err) {
       console.error(err);
       setError(err.message);
-      return null;
+      return [];
     }
-  }, [WORKER_ENDPOINT, updateRateLimit]);
+  }, [githubToken, updateRateLimit]);
 
-  /**
-   * Fetches and sets GitHub profile stats and repositories.
-   */
+  // Helper function to fetch GitHub profile stats directly from GitHub API
+  const fetchProfileStats = useCallback(async () => {
+    try {
+      // Check if profile stats are cached
+      if (cache.current.profileStats) {
+        return cache.current.profileStats;
+      }
+
+      // Fetch user profile
+      const userResponse = await fetch(`${GITHUB_API_BASE}/user`, {
+        headers: {
+          Authorization: `token ${githubToken}`,
+          Accept: 'application/vnd.github.v3+json',
+        },
+      });
+
+      // Update rate limit based on response headers
+      updateRateLimit(userResponse.headers);
+
+      if (!userResponse.ok) {
+        const userErrorData = await userResponse.json();
+        throw new Error(
+          `Failed to fetch user profile: ${userResponse.status} ${userResponse.statusText} - ${userErrorData.message}`
+        );
+      }
+
+      const userData = await userResponse.json();
+
+      // Fetch starred repositories
+      const starredReposResponse = await fetch(
+        `${GITHUB_API_BASE}/user/starred?per_page=100`,
+        {
+          headers: {
+            Authorization: `token ${githubToken}`,
+            Accept: 'application/vnd.github.v3+json',
+          },
+        }
+      );
+
+      // Update rate limit based on response headers
+      updateRateLimit(starredReposResponse.headers);
+
+      if (!starredReposResponse.ok) {
+        const starredErrorData = await starredReposResponse.json();
+        throw new Error(
+          `Failed to fetch starred repositories: ${starredReposResponse.status} ${starredReposResponse.statusText} - ${starredErrorData.message}`
+        );
+      }
+
+      const starredRepos = await starredReposResponse.json();
+      const totalStars = starredRepos.length;
+
+      const stats = {
+        followers: userData.followers,
+        publicRepos: userData.public_repos,
+        totalStars: totalStars,
+      };
+
+      // Cache the profile stats
+      cache.current.profileStats = stats;
+
+      return stats;
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+      return { followers: 0, publicRepos: 0, totalStars: 0 };
+    }
+  }, [githubToken, updateRateLimit]);
+
+  // Function to calculate the Contribution Score
+  const calculateContributionScore = useCallback((stats) => {
+    const { publicRepos, totalStars, followers } = stats;
+    // Example Formula: (publicRepos * 2) + (totalStars * 1.5) + (followers * 1)
+    const score = Math.min((publicRepos * 2) + (totalStars * 1.5) + (followers * 1), 100);
+    return Math.round(score);
+  }, []);
+
+  // Function to load data, with caching and rate limit checks
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setError(null); 
       try {
-        const data = await fetchProjectsData(page, 20); // perPage = 20
-
-        if (!data) {
-          setLoading(false);
-          return;
-        }
-
-        const { profileStats: fetchedProfileStats, repos: fetchedRepos } = data;
-
-        // Set profileStats if not already set
-        if (!cache.current.profileStats) {
-          setProfileStats(fetchedProfileStats);
-          cache.current.profileStats = fetchedProfileStats;
-        }
-
-        // Append new repos, avoiding duplicates based on repo id
+        const repositories = await fetchReposAndLanguages(page, 20); // perPage = 20
+        // Filter out duplicate repositories based on id
         setRepos((prevRepos) => {
           const existingRepoIds = new Set(prevRepos.map((repo) => repo.id));
-          const newRepos = fetchedRepos.filter((repo) => !existingRepoIds.has(repo.id));
+          const newRepos = repositories.filter((repo) => !existingRepoIds.has(repo.id));
           return [...prevRepos, ...newRepos];
         });
 
-        // Extract unique languages from fetched repositories
+        // Extract unique languages from all repositories
         const languages = new Set();
-        fetchedRepos.forEach((repo) => {
+        repositories.forEach((repo) => {
           if (repo.languages) {
             Object.keys(repo.languages).forEach((lang) => languages.add(lang));
           }
@@ -148,16 +261,35 @@ const ProjectsPage = () => {
           return Array.from(updatedLanguages).sort(); // Sort alphabetically
         });
 
-        // Determine if more repos are available
-        if (fetchedRepos.length < 20) { // Adjusted to match perPage
+        if (repositories.length < 20) { // Adjusted to match perPage
           setHasMore(false); // No more repos to load
         }
+
+        // Calculate Contribution Score after fetching data
+        const currentProfileStats = cache.current.profileStats || await fetchProfileStats();
+        const score = calculateContributionScore(currentProfileStats);
+        setContributionScore(score);
+
+        // Calculate and set the Contribution Grade
+        const grade = getGradeFromScore(score);
+        setContributionGrade(grade);
       } catch (err) {
         console.error('Error fetching data:', err);
-        setError('An error occurred while fetching data.');
       } finally {
         setLoading(false);
       }
+    };
+
+    const fetchStats = async () => {
+      const stats = await fetchProfileStats();
+      setProfileStats(stats);
+      // Calculate Contribution Score after fetching stats
+      const score = calculateContributionScore(stats);
+      setContributionScore(score);
+
+      // Calculate and set the Contribution Grade
+      const grade = getGradeFromScore(score);
+      setContributionGrade(grade);
     };
 
     // Before fetching data, check if rate limit is exceeded
@@ -176,28 +308,21 @@ const ProjectsPage = () => {
       }
     }
 
+    fetchStats();
     fetchData();
-  }, [page, rateLimit.remaining, rateLimit.reset, fetchProjectsData]);
+  }, [page, rateLimit.remaining, rateLimit.reset, fetchReposAndLanguages, fetchProfileStats, calculateContributionScore]);
 
-  /**
-   * Handles changes in the search input.
-   * @param {object} e - The event object.
-   */
+  // Function to handle search input
   const handleSearchChange = useCallback((e) => {
     setSearchQuery(e.target.value.toLowerCase());
   }, []);
 
-  /**
-   * Handles changes in the language filter.
-   * @param {object} e - The event object.
-   */
+  // Function to handle language filter
   const handleLanguageChange = useCallback((e) => {
     setSelectedLanguage(e.target.value);
   }, []);
 
-  /**
-   * Loads more repositories when the "Load More Projects" button is clicked.
-   */
+  // Function to load more repos when clicking "Load More"
   const loadMoreRepos = useCallback(() => {
     if (hasMore && !loading && rateLimit.remaining > 0 && !isBackoff) {
       if (rateLimit.remaining <= BACKOFF_THRESHOLD) {
@@ -214,11 +339,9 @@ const ProjectsPage = () => {
         setPage((prevPage) => prevPage + 1);
       }
     }
-  }, [hasMore, loading, rateLimit.remaining, isBackoff]);
+  }, [hasMore, loading, rateLimit.remaining, isBackoff, BACKOFF_THRESHOLD, BACKOFF_DELAY]);
 
-  /**
-   * Filters repositories based on search query and selected programming language.
-   */
+  // Filter repositories based on search and language using useMemo for performance
   const filteredRepos = useMemo(() => {
     return repos.filter((repo) => {
       const matchesSearch =
@@ -230,9 +353,7 @@ const ProjectsPage = () => {
     });
   }, [repos, searchQuery, selectedLanguage]);
 
-  /**
-   * Separates featured projects from regular repositories.
-   */
+  // Separate featured projects
   const featuredRepos = useMemo(() => {
     return filteredRepos.filter((repo) =>
       featuredProjectsNames.includes(repo.name)
@@ -245,9 +366,7 @@ const ProjectsPage = () => {
     );
   }, [filteredRepos]);
 
-  /**
-   * Calculates the time remaining until the GitHub API rate limit resets.
-   */
+  // Calculate time until rate limit reset
   const timeUntilReset = useMemo(() => {
     if (!rateLimit.reset) return null;
     const now = Date.now();
@@ -330,16 +449,29 @@ const ProjectsPage = () => {
             </ul>
           </div>
 
-          {/* Circular Progress for Contribution Score */}
+          {/* Circular Progress for Contribution Grade */}
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-center">
-            <h3 className="text-2xl font-semibold mb-4">Contribution Score</h3>
-            <div className="w-32 mx-auto" aria-label="Contribution Score">
+            <h3 className="text-2xl font-semibold mb-4">Contribution Grade</h3>
+            <div className="w-32 mx-auto" aria-label="Contribution Grade">
               <CircularProgressbar
-                value={75} // Replace with actual contribution score
-                text={"B-"}
+                value={contributionScore}
+                text={contributionGrade || `${contributionScore}%`}
                 styles={buildStyles({
                   textColor: "#fff",
-                  pathColor: "#f06292",
+                  pathColor: 
+                    contributionGrade === 'A+' ? '#FFD700' : // Gold
+                    contributionGrade === 'A'  ? '#4CAF50' : // Green
+                    contributionGrade === 'A-' ? '#8BC34A' : // Light Green
+                    contributionGrade === 'B+' ? '#CDDC39' : // Lime
+                    contributionGrade === 'B'  ? '#FFEB3B' : // Yellow
+                    contributionGrade === 'B-' ? '#FFC107' : // Amber
+                    contributionGrade === 'C+' ? '#FF9800' : // Orange
+                    contributionGrade === 'C'  ? '#FF5722' : // Deep Orange
+                    contributionGrade === 'C-' ? '#F44336' : // Red
+                    contributionGrade === 'D+' ? '#E91E63' : // Pink
+                    contributionGrade === 'D'  ? '#9C27B0' : // Purple
+                    contributionGrade === 'D-' ? '#673AB7' : // Deep Purple
+                    '#B0BEC5', // Blue Grey for F
                   trailColor: "#d6d6d6",
                 })}
               />
@@ -463,7 +595,8 @@ const ProjectsPage = () => {
       )}
     </div>
   );
+
+  // Memoize the ProjectsPage component to prevent unnecessary re-renders
 };
 
-// Memoize the ProjectsPage component to prevent unnecessary re-renders
 export default React.memo(ProjectsPage);
