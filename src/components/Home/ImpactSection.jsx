@@ -56,7 +56,7 @@ const ImpactSection = () => {
           </div>
           <div>
             <h3 className="text-4xl sm:text-6xl font-bold">${count2.toLocaleString()}</h3>
-            <p className="text-md sm:text-lg">Saved for ForgeRock</p>
+            <p className="text-md sm:text-lg">Saved for Clients</p>
           </div>
           <div>
             <h3 className="text-4xl sm:text-6xl font-bold">{count3}+</h3>
