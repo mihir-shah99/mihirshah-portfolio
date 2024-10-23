@@ -30,7 +30,6 @@ function App() {
             <Route path="/book" element={<BookPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/experience" element={<ExperiencePage />} />
-            <Route path="/book" element={<BookPage />} />
             <Route path="/blog" element={<BlogPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
